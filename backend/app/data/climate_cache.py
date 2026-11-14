@@ -1,11 +1,13 @@
-"""Caché SQLite local de respuestas normalizadas; conserva fecha de descarga."""
+"""SQLite cache of normalized responses preserving retrieval dates."""
 
 import json
 import sqlite3
+import os
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-DEFAULT_PATH = Path(__file__).resolve().parents[2] / "data" / "cache" / "observations.sqlite"
+DEFAULT_PATH = Path(os.environ.get("CLIMATE_CACHE_PATH", str(Path(tempfile.gettempdir()) / "pacha-pulse" / "observations.sqlite" if os.environ.get("VERCEL") else Path(__file__).resolve().parents[2] / "data" / "cache" / "observations.sqlite")))
 
 
 class ClimateCache:
@@ -31,4 +33,4 @@ class ClimateCache:
 
 
 def cache_key(lat, lon, start, end):
-    return f"POWER:daily:UTC:T2M,T2M_MIN,T2M_MAX,PRECTOTCORR:schema1:{lat}:{lon}:{start}:{end}"
+    return f"POWER:daily:UTC:T2M,T2M_MIN,T2M_MAX,PRECTOTCORR:schema2:{lat}:{lon}:{start}:{end}"

@@ -17,7 +17,7 @@ export function useClimate(initialLocation: Location | null = null) {
     setLoading(false)
   }
   async function load(start: string, end: string, demo = false) {
-    if (!demo && !location) { setError('Selecciona primero una ubicación.'); return }
+    if (!demo && !location) { setError('Please choose a location first.'); return }
     active.current?.abort()
     const controller = new AbortController()
     active.current = controller
@@ -33,7 +33,7 @@ export function useClimate(initialLocation: Location | null = null) {
         : await getClimate(location!, start, end, controller.signal)
       if (!controller.signal.aborted) setClimate(result)
     } catch (caught) {
-      if (!controller.signal.aborted) { setError(caught instanceof Error ? caught.message : 'No se pudo obtener el clima.'); setClimate(null) }
+      if (!controller.signal.aborted) { setError(caught instanceof Error ? caught.message : 'Weather data could not be loaded.'); setClimate(null) }
     } finally {
       if (!controller.signal.aborted) setLoading(false)
     }

@@ -5,11 +5,11 @@ export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000),
     headers: { Accept: 'application/json' },
   })
-  if (!response.ok) throw new Error('No se pudo conectar con la API local.')
+  if (!response.ok) throw new Error('The API could not be reached.')
   const body: unknown = await response.json()
   if (!body || typeof body !== 'object' || !('status' in body) || body.status !== 'ok' ||
       !('service' in body) || body.service !== 'agroshift-api' || !('version' in body) || typeof body.version !== 'string') {
-    throw new Error('La API devolvió una respuesta inesperada.')
+    throw new Error('The API returned an unexpected response.')
   }
   return body as HealthResponse
 }
@@ -17,7 +17,7 @@ export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
 export async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { ...options, signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(65000)]) : AbortSignal.timeout(65000), headers: { Accept: 'application/json', ...options.headers } })
   const body = await response.json()
-  if (!response.ok) throw new Error(body.error?.message || 'La solicitud no pudo completarse. Revisa los datos o reintenta.')
+  if (!response.ok) throw new Error(body.error?.message || 'The request could not be completed. Check the data or try again.')
   return body as T
 }
 

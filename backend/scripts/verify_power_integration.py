@@ -1,4 +1,4 @@
-"""Petición HTTP real a FastAPI y NASA, y segunda petición servida desde caché."""
+"""Live HTTP check through FastAPI to NASA; repeat request verifies cache delivery."""
 
 import json
 from pathlib import Path

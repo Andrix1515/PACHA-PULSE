@@ -15,7 +15,7 @@ export default function ApiStatus() {
   }, [attempt])
   return <div className={`api-status ${status}`}>
     <span className="status-dot" aria-hidden="true" />
-    <span role="status">{status === 'loading' ? 'Conectando API…' : status === 'ok' ? 'API local conectada' : 'API local sin conexión'}</span>
-    {status === 'error' && <button className="icon-button" aria-label="Reintentar conexión con la API" onClick={() => setAttempt((n) => n + 1)}><RefreshCw size={16} /></button>}
+    <span role="status">{status === 'loading' ? 'Connecting…' : status === 'ok' ? 'API connected' : 'API unavailable'}</span>
+    {status === 'error' && <button className="icon-button" aria-label="Retry API connection" onClick={() => setAttempt((n) => n + 1)}><RefreshCw size={16} /></button>}
   </div>
 }

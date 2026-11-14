@@ -9,8 +9,8 @@
   "lat": -12.05,
   "lon": -75.2,
   "limitations": [
-    "Serie histórica NASA POWER basada en productos de rejilla; no es una estación en tu parcela ni un pronóstico.",
-    "La rejilla meteorológica MERRA-2 es nominalmente 0,5° × 0,625°; el relieve de montaña puede no quedar representado.",
-    "La precipitación de rejilla no equivale a agua aprovechable por un cultivo."
+    "Historical NASA POWER grid data; not a station in your field or a forecast.",
+    "Nominal MERRA-2 weather grid: 0.5 degrees by 0.625 degrees; mountain terrain may not be represented.",
+    "Grid rainfall is not the same as water available to a crop."
   ]
 }

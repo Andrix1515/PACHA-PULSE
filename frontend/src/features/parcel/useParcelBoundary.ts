@@ -22,8 +22,8 @@ export function useParcelBoundary() {
     try {
       if (next) localStorage.setItem(KEY, JSON.stringify({ version: 1, feature: next }))
       else localStorage.removeItem(KEY)
-      setStorageMessage(next ? 'Parcela guardada en este navegador. Exporta GeoJSON para conservar una copia.' : 'Parcela eliminada de este navegador.')
-    } catch { setStorageMessage('El navegador no permitió guardar. La parcela sigue en esta sesión; exporta GeoJSON como copia.') }
+      setStorageMessage(next ? 'Field saved in this browser. Export GeoJSON to keep a copy.' : 'Field removed from this browser.')
+    } catch { setStorageMessage('The browser could not save. The field remains in this session; export GeoJSON as a backup.') }
   }
   return { boundary, save, storageMessage }
 }

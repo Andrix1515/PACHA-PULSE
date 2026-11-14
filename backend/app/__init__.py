@@ -1,1 +1,1 @@
-"""AgroShift: API local de apoyo a decisiones agrícolas."""
+"""Pacha Pulse agricultural decision support API."""

@@ -9,7 +9,7 @@ from app.clients.power import PowerError, fetch_raw, normalize, validate_period,
 from app.data.climate_cache import ClimateCache, cache_key
 from app.data.climate_schemas import ClimateResponse
 
-router = APIRouter(prefix="/observations", tags=["Clima"])
+router = APIRouter(prefix="/observations", tags=["Climate"])
 cache = ClimateCache()
 
 
@@ -34,7 +34,7 @@ async def climate(lat: float = Query(ge=-90, le=90, allow_inf_nan=False), lon: f
 
 @router.get("/climate/demo", response_model=ClimateResponse)
 def climate_demo():
-    """Archivo NASA auténtico de una ubicación fija; nunca sustituye otra consulta."""
+    """Authentic NASA archive for a fixed location; never substitutes a different query."""
     directory = Path(__file__).resolve().parents[3] / "data" / "demo"
     raw = json.loads((directory / "power-mantaro-2025-01.raw.json").read_text(encoding="utf-8"))
     manifest = json.loads((directory / "power-mantaro-2025-01.source.json").read_text(encoding="utf-8"))

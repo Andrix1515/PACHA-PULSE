@@ -1,4 +1,4 @@
-"""Cliente NASA POWER diario: no proporciona pronósticos ni medidas de parcela."""
+"""Daily NASA POWER client: historical context, not forecasts or parcel measurements."""
 
 import asyncio
 import math
@@ -9,9 +9,9 @@ import httpx
 BASE_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 PARAMETERS = {"T2M": "C", "T2M_MIN": "C", "T2M_MAX": "C", "PRECTOTCORR": "mm/day"}
 LIMITATIONS = [
-    "Serie histórica NASA POWER basada en productos de rejilla; no es una estación en tu parcela ni un pronóstico.",
-    "La rejilla meteorológica MERRA-2 es nominalmente 0,5° × 0,625°; el relieve de montaña puede no quedar representado.",
-    "La precipitación de rejilla no equivale a agua aprovechable por un cultivo.",
+    "Historical NASA POWER grid data, not a weather station in your field or a forecast.",
+    "The nominal MERRA-2 weather grid is 0.5° × 0.625°; mountain terrain may not be represented.",
+    "Grid rainfall is not the same as water available to a crop.",
 ]
 
 
@@ -21,11 +21,11 @@ class PowerError(Exception):
 
 def validate_period(start: date, end: date) -> None:
     if start > end:
-        raise ValueError("La fecha inicial debe ser anterior o igual a la final.")
+        raise ValueError("The start date must be on or before the end date.")
     if (end - start).days > 365:
-        raise ValueError("Consulta como máximo 366 días por solicitud.")
+        raise ValueError("Request at most 366 days at a time.")
     if start < date(1981, 1, 1) or end >= datetime.now(timezone.utc).date():
-        raise ValueError("Selecciona fechas históricas desde 1981 y anteriores a hoy.")
+        raise ValueError("Choose historical dates from 1981 and before today.")
 
 
 def request_params(lat: float, lon: float, start: date, end: date) -> dict:
@@ -37,7 +37,7 @@ async def fetch_raw(lat: float, lon: float, start: date, end: date, client: http
     params = request_params(lat, lon, start, end)
     own_client = client is None
     if own_client:
-        client = httpx.AsyncClient(timeout=httpx.Timeout(25, connect=10), headers={"User-Agent": "AgroShift-local-demo/0.2 (NASA POWER educational use)"})
+        client = httpx.AsyncClient(timeout=httpx.Timeout(25, connect=10), headers={"User-Agent": "Pacha-Pulse-demo/0.3 (NASA POWER educational use)"})
     try:
         for attempt in range(2):
             try:
@@ -52,10 +52,10 @@ async def fetch_raw(lat: float, lon: float, start: date, end: date, client: http
                 if attempt == 0:
                     await asyncio.sleep(0.5)
                     continue
-                raise PowerError("NASA POWER no respondió a tiempo. Reintenta o utiliza el ejemplo histórico guardado.")
+                raise PowerError("NASA POWER did not respond in time. Try again or open the saved historical example.")
             except (httpx.HTTPStatusError, ValueError) as exc:
-                raise PowerError("NASA POWER devolvió una respuesta no utilizable. Reintenta más tarde.") from exc
-        raise PowerError("NASA POWER no está disponible temporalmente.")
+                raise PowerError("NASA POWER returned an unusable response. Please try again later.") from exc
+        raise PowerError("NASA POWER is temporarily unavailable.")
     finally:
         if own_client:
             await client.aclose()
@@ -68,7 +68,7 @@ def normalize(raw: dict, lat: float, lon: float, start: date, end: date, retriev
         version = raw["header"]["api"]["version"]
         for key, unit in PARAMETERS.items():
             if raw["parameters"][key]["units"] != unit or not isinstance(parameters[key], dict):
-                raise PowerError("Las unidades o parámetros de NASA POWER cambiaron; es necesario revisarlos.")
+                raise PowerError("NASA POWER units or parameters have changed and need review.")
         data = []
         day = start
         while day <= end:
@@ -84,7 +84,7 @@ def normalize(raw: dict, lat: float, lon: float, start: date, end: date, retriev
             day += timedelta(days=1)
         source = "NASA POWER · MERRA-2"
         period = f"{start.isoformat()}/{end.isoformat()}"
-        spatial_resolution = "MERRA-2 meteorología: nominal 0,5° × 0,625°; no es resolución de parcela"
+        spatial_resolution = "MERRA-2 weather: nominal 0.5° × 0.625°; not field-level resolution"
         def metric(value, unit, quality, limitations=None):
             return {"value": value, "unit": unit, "status": "derived" if value is not None else "unavailable",
                     "source": source, "observed_at": period, "retrieved_at": retrieved_at,
@@ -105,4 +105,4 @@ def normalize(raw: dict, lat: float, lon: float, start: date, end: date, retriev
             },
         }
     except (KeyError, TypeError, AttributeError) as exc:
-        raise PowerError("El formato recibido de NASA POWER no es compatible.") from exc
+        raise PowerError("NASA POWER returned an unsupported format.") from exc

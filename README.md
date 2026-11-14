@@ -1,123 +1,64 @@
 # Pacha Pulse
 
-Nombre anterior: AgroShift. La documentación histórica y algunos identificadores internos conservan ese nombre por compatibilidad.
+A field notebook for growers and agronomists: polygon mapping, historical NASA POWER climate, three crop rotations, exportable reports, and Pacha, a friendly guided companion with optional Gemini chat. All current application text and documentation are in English.
 
-## Perfiles y delimitación de parcelas
+## Run locally on Windows
 
-En “Modo de trabajo” elige **Cultivador** (pasos guiados y resumen) o **Agrónomo** (tablas, método y procedencia más visibles). Ambos comparten los mismos datos, geometría y motor; cambiar de perfil no cambia resultados ni crea permisos de seguridad.
-
-Para delimitar: acerca el mapa al campo → “Dibujar o editar parcela” → añade los puntos del borde por clic/toque o por coordenadas → “Cerrar y guardar parcela”. Los marcadores se pueden mover; la lista permite editar, reordenar o eliminar puntos sin arrastrar. “Nuevo contorno” inicia un borrador sin sustituir lo guardado hasta confirmar. Hay escala métrica, zoom hasta 19, vista mundial, encuadre y ampliación del mapa.
-
-Se guarda **una parcela activa** en este navegador, recuperable al recargar; el perfil agrícola sigue siendo de sesión. Puedes exportar/importar GeoJSON para conservar o cambiar de zona. Se validan cruces, duplicados, rangos y área. El área es aproximada, no catastral, y no reemplaza la superficie que declaraste. La consulta NASA continúa siendo por un punto de referencia, sin promedio zonal ni mayor resolución satelital.
-
-Contrato para el equipo de UI/UX y límites de accesibilidad: [functional-handoff.md](docs/functional-handoff.md). La implementación mantiene la presentación existente salvo los controles funcionales necesarios.
-
-Plataforma local de apoyo a decisiones agrícolas con dos recorridos: **Monitorear** cultivos existentes y **Planificar** futuras campañas comparando al menos tres secuencias de rotación, incluida la habitual.
-
-La comparación de rotaciones es el núcleo del producto. El monitoreo aporta contexto ambiental; no determina automáticamente qué sembrar.
-
-## Estado
-
-Demo local preparada el 14 de noviembre de 2026: página del proyecto, mapa y perfil compartido, NASA POWER real con gráfico/tabla/procedencia y comparación de tres secuencias editables con escenarios. **La comparación es estructural y exploratoria: no calcula aptitud agrícola, rendimiento, demanda hídrica ni rentabilidad.** MODIS sigue pendiente por falta de respuesta del servicio de acceso probado; no se afirma cumplir todavía el mínimo de dos productos NASA.
-
-## Abrir la demo con doble clic
-
-1. Ejecuta [DEMO.cmd](DEMO.cmd). Inicia los dos servidores locales en segundo plano y abre el navegador.
-2. Página del proyecto: la URL que muestra el lanzador (normalmente `http://localhost:5173/`).
-3. Aplicación: esa URL seguida de `/#demo`.
-4. Para cerrar los servidores, ejecuta [STOP_DEMO.cmd](STOP_DEMO.cmd).
-
-El lanzador verifica los puertos, evita duplicar sus procesos y registra logs en `.local/`. Si otra copia ocupa 5173/8000, busca un par libre sin cerrarla. En la comprobación actual seleccionó **5174/8001**: proyecto `http://localhost:5174/`, demo `http://localhost:5174/#demo`. Solo administra procesos identificados con esta raíz, PID y fecha de creación. No modifica la política global de PowerShell; la opción de ejecución del `.cmd` solo afecta al proceso que abre. Los scripts requieren Windows y las dependencias locales ya instaladas.
-
-**Recorrido de dos minutos:** abrir la demo → “Abrir ejemplo real: Valle del Mantaro” → observar clima y procedencia → Planificar → editar/confirmar secuencia habitual → comparar → cambiar al 70 % → volver a comparar → explicar datos faltantes. El [guion de presentación](docs/demo-guide.md) incluye pasos y límites.
-
-Instrucciones del proyecto: [AGENTS.md](../AGENTS.md). Contexto complementario: [guía de AgroShift](../GUIA_CODEX_AGROSHIFT.md). Los ejemplos de prompts de la guía no se consideran tareas autorizadas.
-
-## Documentación
-
-- [Estado, verificaciones y siguiente paso](docs/progress.md).
-- [Arquitectura y dependencias previstas](docs/architecture.md).
-- [Decisiones](docs/decisions.md).
-- [Metodología y criterios de validación](docs/methodology.md).
-- [Fuentes previstas y estado de integración](docs/sources.md).
-- [Limitaciones y riesgos](docs/limitations.md).
-
-## Entorno local comprobado
-
-| Herramienta | Resultado |
-| --- | --- |
-| Node.js | 22.15.0 |
-| npm | 10.9.2 |
-| Python mediante `python` | 3.12.10 |
-| Python mediante `py` | Predeterminado 3.14; también disponible 3.12 |
-| pip de Python 3.12 | 25.0.1 |
-| SQLite de Python 3.12 | 3.49.1 |
-| `venv` / `ensurepip` | Importaciones correctas |
-
-El backend utiliza un entorno virtual Python 3.12. No se necesita modificar la política global de PowerShell. Las versiones instaladas quedaron registradas en `frontend/package-lock.json` y `backend/requirements.lock.txt`.
-
-## Arrancar localmente en PowerShell
-
-Desde la raíz del proyecto, abre dos terminales. Las dependencias ya están instaladas en este equipo.
-
-Terminal 1, API:
+Requirements: Python 3.12 and Node.js 22.12 or later (Node 24 LTS is suitable).
 
 ```powershell
-cd backend
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Terminal 2, interfaz:
-
-```powershell
+cd C:\Users\ANTONY\Documents\ANTONY\Farm_Project
+py -3.12 -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock.txt
 cd frontend
-npm run dev
-```
-
-Abre `http://localhost:5173`. La API responde en `http://localhost:8000/api/v1/health`; el frontend utiliza `/api/v1/health` mediante el proxy de Vite. Ambos procesos escuchan solo localmente. Para detenerlos usa `Ctrl+C` en cada terminal. Los servidores de verificación se detuvieron al finalizar las pruebas.
-
-Para reinstalar las dependencias locales, desde la raíz:
-
-```powershell
-cd backend
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.lock.txt
-cd ..\frontend
 npm ci
+cd ..
+.\DEMO.cmd
 ```
 
-Los archivos `.env.example` documentan la configuración opcional; no contienen secretos y no hace falta copiarlos para el arranque predeterminado. El proxy se puede cambiar con `API_PROXY_TARGET` en `frontend/.env.local`. Los valores `VITE_*`, si se añaden en el futuro, serán públicos: no deben contener credenciales.
+`DEMO.cmd` opens the project page. The launcher chooses a free web/API port pair and prints the addresses; another copy of the project remains untouched. Use `STOP_DEMO.cmd` to stop only this folder's registered processes. The legacy launcher filename `Start-AgroShift.ps1` is retained for compatibility.
 
-Selecciona una ubicación en el mapa o introduce coordenadas WGS84; se acepta coma o punto decimal. Completa y guarda los datos agrícolas que conozcas. La ubicación y el perfil permanecen al cambiar de recorrido y se eliminan al recargar. Los escenarios y el contexto de suelo/agua se envían a FastAPI al comparar, sin persistencia del perfil. OSM recibe las peticiones cartográficas normales del navegador. NASA solo se consulta al confirmar fechas y ubicación; mover el mapa no descarga datos climáticos.
+## Enable Gemini privately
 
-El ejemplo histórico auténtico se sirve desde el disco local: no necesita conexión NASA durante la presentación. Cambia explícitamente a Mantaro (-12.05, -75.2), enero de 2025; nunca se atribuye esa serie a otra ubicación. La consulta en línea permite otros puntos y periodos históricos de hasta 366 días. Los resultados normalizados se guardan en SQLite con caché de siete días, conservando fecha de descarga y versión. Reproducir la descarga: desde `backend/`, `.venv\Scripts\python.exe scripts/refresh_demo.py`. Verificar integración NASA real por HTTP: `.venv\Scripts\python.exe scripts/verify_power_integration.py` (puerto 8000 libre).
+Copy `backend/.env.example` to `backend/.env`, enter your own `GEMINI_API_KEY` in that local file, and restart the backend. Never put credentials in the frontend or commit `.env`. Default model: `gemini-3.5-flash-lite`; override using `GEMINI_MODEL` if your account requires another supported model. Obtain a key privately in [Google AI Studio](https://aistudio.google.com/api-keys).
 
-## Verificación
+The built-in six-step tour works without Gemini. AI chat explains the active module and available results, and proposes navigation, profile updates or explicit coordinates. You review proposed values and press **Confirm and apply** before forms change. Messages, recent conversation and current field context are sent to Google only when you send a question. `store:false` disables Interactions conversation storage; Google's account terms and processing policies still apply.
+
+## Demo route
+
+1. Open `/#demo`, then **My field**. Select a query point or draw a polygon. Save known profile details.
+2. In **NASA climate**, load a historical period or select **Open real example: Mantaro Valley - January 2025**. The saved example explicitly moves the query point to Mantaro.
+3. In **Rotation planner**, edit your usual sequence and two alternatives, confirm the reference, and compare at 100% or 70% rainfall.
+4. Use **Ask Pacha** for guided steps or configured AI chat. Export your evidence through **Reports**.
+
+**Grower** starts with simpler explanations. **Agronomist** expands the observation table and calculation method. Both use identical data and calculations. Work modes are presentation preferences, not authentication or access control.
+
+## Deploy for the jury
+
+Follow [the complete Vercel guide](docs/VERCEL_DEPLOYMENT.md). Root `vercel.json` defines the Vite web service and FastAPI API service under one domain. This uses Vercel Services (currently Beta), and keeps the key server-side. No deployment has been created by this local change.
+
+## Scientific limits
+
+NASA POWER is the only integrated NASA product. The saved Mantaro record is authentic, includes a source manifest and raw SHA-256, and contains 31 daily observations for January 2025. Rainfall total: 60.64 mm; mean temperature: 9.41 degrees C. These summaries describe a historical grid point, not a parcel sensor or a forecast.
+
+Rotations are structural comparisons: distinct crops, adjacent repeats and fallow campaigns. Rainfall scenarios multiply the historical total; no crop suitability ranking, yield, soil health, disease diagnosis, irrigation requirement or economic forecast is calculated. MODIS integration and its validation remain pending. The illustrated landscape from the supplied design is decorative.
+
+Only the saved polygon persists in this browser. Profile, chat and results last for the current page session. Export JSON and GeoJSON before leaving. Vercel's SQLite cache is temporary, not a persistent database.
+
+## Checks
 
 ```powershell
 cd backend
-.\.venv\Scripts\python.exe -m pytest -q
-cd ..\frontend
+.venv/Scripts/python.exe -m pytest -q
+cd ..
+cd frontend
 npm run build
+# Choose unused ports if another copy is running:
+$env:PACHA_TEST_WEB_PORT='5175'
+$env:PACHA_TEST_API_PORT='8002'
 npm run test:e2e
 ```
 
-Las pruebas de navegador arrancan y detienen los dos servidores; deben estar libres los puertos 5173 y 8000. Utilizan Microsoft Edge instalado en Windows, en modo headless, con escritorio y emulación móvil. No se descargó un navegador adicional. En otro equipo se requiere Edge para ejecutar esta configuración.
+Backend tests should be run from `backend` (`.venv/Scripts/python.exe -m pytest -q`) so the app import resolves. Browser tests use installed Microsoft Edge and start their own servers. [Verification record](docs/verification-demo.md) distinguishes actual tests from mocked Gemini responses.
 
-Resultado actual: **27 pruebas de backend y 34 de frontend aprobadas** (30 recorridos de navegador y 4 de geometría), build correcto; 4 duplicados móviles de geometría omitidos. Contrato funcional actual en [functional-handoff.md](docs/functional-handoff.md). [Reporte actual de evidencia y límites](docs/verification-demo.md). El [reporte de Fase 1](docs/verification-phase1.md) se conserva como historial. Capturas actuales: [proyecto](docs/evidence/project-desktop.png), [clima real](docs/evidence/climate-desktop.png) y [comparación](docs/evidence/comparison-desktop.png).
-
-## Plan de ejecución
-
-| Fase | Entrega | Depende de |
-| --- | --- | --- |
-| 0 | Inspección, entorno y plan documentados | Instrucciones del proyecto |
-| 1 | React/Vite/TypeScript, mapa, ubicación y perfil compartidos, Monitorear/Planificar; FastAPI `/api/v1/health` | 0 |
-| 2 | NASA POWER real, normalización, caché y gráfico climático | 1 |
-| 3 | Tres secuencias editables y escenarios comparables con supuestos explícitos | 2 |
-| 4 | MODIS real para una región piloto, QA e ingesta incremental local | 3 |
-| 5 | Auditoría y recorrido completo de ambos módulos | 4 |
-| 6, opcional | Experimento NDVI contra baseline de persistencia | 1–5 verificadas y solicitud expresa |
-
-En cada fase se inspeccionan los archivos, se presenta el alcance, se implementa y se ejecutan las verificaciones pertinentes. La solicitud de demo en una hora autorizó continuar por las etapas necesarias de esta entrega. Fase 4 está pendiente por acceso MODIS; la auditoría del MVP completo con dos fuentes NASA también sigue pendiente.
-
-Trabajo exclusivamente local: sin repositorios, commits, sincronizaciones ni despliegues. No se incorporan datos NASA inventados ni predicciones sin validación.
+See [architecture](docs/architecture.md), [methods](docs/methodology.md), [sources](docs/sources.md), [limitations](docs/limitations.md), [team handoff](docs/functional-handoff.md), and [progress](docs/progress.md).

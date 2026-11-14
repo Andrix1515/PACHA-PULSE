@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isolated = process.env.PACHA_ISOLATED === '1'
-const webPort = isolated ? 5174 : 5173
-const apiPort = isolated ? 8001 : 8000
+const webPort = Number(process.env.PACHA_TEST_WEB_PORT || (isolated ? 5174 : 5173))
+const apiPort = Number(process.env.PACHA_TEST_API_PORT || (isolated ? 8001 : 8000))
 
 export default defineConfig({
   testDir: './tests',

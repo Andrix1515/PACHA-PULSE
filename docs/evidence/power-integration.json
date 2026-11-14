@@ -3,7 +3,7 @@
   "first_delivery": "live",
   "second_delivery": "cache",
   "request_url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M%2CT2M_MIN%2CT2M_MAX%2CPRECTOTCORR&community=AG&latitude=-12.05&longitude=-75.2&start=20250101&end=20250131&format=JSON&time-standard=UTC",
-  "retrieved_at": "2026-11-14T19:36:12.430399+00:00",
+  "retrieved_at": "2026-11-14T21:53:51.145195+00:00",
   "days": 31,
   "quality": "complete",
   "product_version": "v2.10.3",
@@ -14,13 +14,13 @@
       "status": "derived",
       "source": "NASA POWER · MERRA-2",
       "observed_at": "2025-01-01/2025-01-31",
-      "retrieved_at": "2026-11-14T19:36:12.430399+00:00",
-      "spatial_resolution": "MERRA-2 meteorología: nominal 0,5° × 0,625°; no es resolución de parcela",
+      "retrieved_at": "2026-11-14T21:53:51.145195+00:00",
+      "spatial_resolution": "MERRA-2 weather: nominal 0.5° × 0.625°; not field-level resolution",
       "quality": "complete",
       "limitations": [
-        "Serie histórica NASA POWER basada en productos de rejilla; no es una estación en tu parcela ni un pronóstico.",
-        "La rejilla meteorológica MERRA-2 es nominalmente 0,5° × 0,625°; el relieve de montaña puede no quedar representado.",
-        "La precipitación de rejilla no equivale a agua aprovechable por un cultivo."
+        "Historical NASA POWER grid data, not a weather station in your field or a forecast.",
+        "The nominal MERRA-2 weather grid is 0.5° × 0.625°; mountain terrain may not be represented.",
+        "Grid rainfall is not the same as water available to a crop."
       ]
     },
     "rainfall_total": {
@@ -29,13 +29,13 @@
       "status": "derived",
       "source": "NASA POWER · MERRA-2",
       "observed_at": "2025-01-01/2025-01-31",
-      "retrieved_at": "2026-11-14T19:36:12.430399+00:00",
-      "spatial_resolution": "MERRA-2 meteorología: nominal 0,5° × 0,625°; no es resolución de parcela",
+      "retrieved_at": "2026-11-14T21:53:51.145195+00:00",
+      "spatial_resolution": "MERRA-2 weather: nominal 0.5° × 0.625°; not field-level resolution",
       "quality": "complete",
       "limitations": [
-        "Serie histórica NASA POWER basada en productos de rejilla; no es una estación en tu parcela ni un pronóstico.",
-        "La rejilla meteorológica MERRA-2 es nominalmente 0,5° × 0,625°; el relieve de montaña puede no quedar representado.",
-        "La precipitación de rejilla no equivale a agua aprovechable por un cultivo."
+        "Historical NASA POWER grid data, not a weather station in your field or a forecast.",
+        "The nominal MERRA-2 weather grid is 0.5° × 0.625°; mountain terrain may not be represented.",
+        "Grid rainfall is not the same as water available to a crop."
       ]
     }
   },

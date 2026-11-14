@@ -1,0 +1,16 @@
+.git
+.local
+design.zip
+**/.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/test-results
+**/playwright-report
+**/.env*
+backend/data/cache
+backend/tests
+frontend/tests
+docs/evidence
+*.log

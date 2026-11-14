@@ -20,9 +20,9 @@ if (Test-Path -LiteralPath $statePath) {
 if ($Stop) {
     foreach ($entry in $previous) {
         if (Test-OwnedProcess $entry) {
-            # En Windows, el ejecutable del venv puede iniciar un Python hijo.
-            # Solo se detiene el hijo si pertenece al proceso registrado y ocupa
-            # el puerto de esta API con el comando esperado.
+            # On Windows, the venv launcher can start a child Python process.
+            # Stop a child only when it belongs to the registered process and owns
+            # this API port with the expected command.
             if ($entry.name -eq 'api') {
                 $apiListeners = @(Get-NetTCPConnection -LocalPort $entry.port -State Listen -ErrorAction SilentlyContinue)
                 $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($entry.pid)")
@@ -33,11 +33,11 @@ if ($Stop) {
                 }
             }
             Stop-Process -Id $entry.pid -ErrorAction SilentlyContinue
-            Write-Host "Detenido: $($entry.name)"
+            Write-Host "Stopped: $($entry.name)"
         }
     }
     Start-Sleep -Milliseconds 300
-    Write-Host 'Servidores de Pacha Pulse detenidos. No se detuvieron procesos ajenos al lanzador.'
+    Write-Host 'Pacha Pulse servers stopped. Processes outside this launcher were left running.'
     exit 0
 }
 
@@ -45,12 +45,12 @@ $running = @($previous | Where-Object { Test-OwnedProcess $_ })
 if ($running.Count -eq 2) {
     $WebPort = ($running | Where-Object { $_.name -eq 'web' }).port
     $appUrl = "http://localhost:$WebPort"
-    Write-Host "Pacha Pulse ya esta activo: $appUrl"
+    Write-Host "Pacha Pulse is already running: $appUrl"
     if (-not $NoBrowser) { Start-Process $appUrl }
     exit 0
 }
 
-if ($running.Count -gt 0) { throw 'Hay una instancia parcial de esta carpeta. Usa STOP_DEMO.cmd y vuelve a iniciar.' }
+if ($running.Count -gt 0) { throw 'This folder has a partially running instance. Use STOP_DEMO.cmd, then start again.' }
 $portsFound = $false
 for ($offset = 0; $offset -le 10; $offset++) {
     $candidateWeb = $WebPort + $offset
@@ -59,15 +59,15 @@ for ($offset = 0; $offset -le 10; $offset++) {
     $occupied = @(Get-NetTCPConnection -LocalPort $candidateWeb,$candidateApi -State Listen -ErrorAction SilentlyContinue)
     if ($occupied.Count -eq 0) { $WebPort=$candidateWeb; $ApiPort=$candidateApi; $portsFound=$true; break }
 }
-if (-not $portsFound) { throw 'No hay un par de puertos locales libres para esta demo.' }
+if (-not $portsFound) { throw 'No free local port pair is available for this demo.' }
 $appUrl = "http://localhost:$WebPort"
-Write-Host "Carpeta de desarrollo: $projectRoot"
-Write-Host "Puertos seleccionados: web $WebPort / API $ApiPort (otras copias permanecen intactas)."
+Write-Host "Development folder: $projectRoot"
+Write-Host "Selected ports: web $WebPort / API $ApiPort (other copies remain untouched)."
 
 $pythonPath = Join-Path $projectRoot 'backend\.venv\Scripts\python.exe'
 $vitePath = Join-Path $projectRoot 'frontend\node_modules\vite\bin\vite.js'
 if (-not (Test-Path -LiteralPath $pythonPath) -or -not (Test-Path -LiteralPath $vitePath)) {
-    throw 'Faltan dependencias. Sigue la instalacion descrita en README.md.'
+    throw 'Dependencies are missing. Follow the installation steps in README.md.'
 }
 $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
 New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null
@@ -84,17 +84,17 @@ try {
     @(@{name='api'; root=$projectRoot; port=$ApiPort; pid=$api.Id; startedTicks=$api.StartTime.ToUniversalTime().Ticks.ToString()}, @{name='web'; root=$projectRoot; port=$WebPort; pid=$web.Id; startedTicks=$web.StartTime.ToUniversalTime().Ticks.ToString()}) | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
     $ready = $false
     for ($attempt = 0; $attempt -lt 35; $attempt++) {
-        if ($api.HasExited -or $web.HasExited) { throw 'Un servidor termino al arrancar. Consulta los logs de .local.' }
+        if ($api.HasExited -or $web.HasExited) { throw 'A server exited during startup. Check the logs in .local.' }
         try {
             $apiResponse = Invoke-WebRequest "http://127.0.0.1:$ApiPort/api/v1/health" -UseBasicParsing -TimeoutSec 2
             $webResponse = Invoke-WebRequest "http://127.0.0.1:$WebPort/" -UseBasicParsing -TimeoutSec 2
             if ($apiResponse.StatusCode -eq 200 -and $webResponse.StatusCode -eq 200) { $ready = $true; break }
         } catch { Start-Sleep -Milliseconds 300 }
     }
-    if (-not $ready) { throw 'Los servidores no estuvieron listos a tiempo. Consulta los logs de .local.' }
-    Write-Host "Pagina del proyecto: $appUrl"
+    if (-not $ready) { throw 'Servers did not become ready in time. Check the logs in .local.' }
+    Write-Host "Project page: $appUrl"
     Write-Host "Demo: $appUrl/#demo"
-    Write-Host 'Para detener: doble clic en STOP_DEMO.cmd.'
+    Write-Host 'To stop: double-click STOP_DEMO.cmd.'
     if (-not $NoBrowser) { Start-Process $appUrl }
 } catch {
     foreach ($process in $created) {

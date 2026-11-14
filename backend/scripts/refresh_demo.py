@@ -1,4 +1,4 @@
-"""Actualiza solo el ejemplo Mantaro/enero 2025 y su procedencia, sin credenciales."""
+"""Refresh only the authentic Mantaro January 2025 example and its provenance."""
 
 import asyncio
 from datetime import date, datetime, timezone

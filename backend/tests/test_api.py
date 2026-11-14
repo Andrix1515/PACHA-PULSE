@@ -6,10 +6,10 @@ import pytest
 from app.main import app
 
 
-def request(method, path):
+def request(method, path, **kwargs):
     async def send():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
-            return await client.request(method, path)
+            return await client.request(method, path, **kwargs)
     return asyncio.run(send())
 
 

@@ -1,71 +1,46 @@
-# Verificación de la demo y página del proyecto
+# Verification record - 2026-11-14
 
-2026-11-14 · America/Lima. Demo local para presentar dentro del plazo de una hora solicitado. No publicada.
+## Executed checks
 
-## Entregado
-
-- Página del proyecto en `/`: problema, recorridos, fuentes, ejemplo, método y límites, con ilustración conceptual propia.
-- Aplicación en `/#demo`: mapa, coordenadas WGS84 y perfil compartido entre Monitorear/Planificar.
-- NASA POWER real: consulta histórica, caché SQLite, gráfico/tabla, unidades, periodo, calidad, versión y fecha de descarga; exportación JSON.
-- Ejemplo auténtico Mantaro/enero 2025 con respuesta original, manifest y SHA-256; funciona sin conexión NASA.
-- Tres secuencias editables y escenarios de lluvia: comparación de estructura y compromisos, sin rendimiento, aptitud, demanda hídrica ni rentabilidad inventados.
-- Arranque de doble clic, parada de procesos propios y guion de presentación.
-
-## Evidencia por frontera
-
-| Frontera | Resultado y evidencia |
+| Check | Actual result |
 | --- | --- |
-| Página → demo | Navegación real comprobada en escritorio/móvil; título y contenido cambian correctamente |
-| Coordenadas/perfil → módulos | Persisten durante la sesión y entre recorridos; campos desconocidos conservados |
-| Navegador → proxy → FastAPI | Health 200 y consulta del ejemplo auténtico; E2E sin interceptación en el recorrido satisfactorio |
-| FastAPI → NASA POWER | HTTP 200 real, API v2.10.3, 31 días completos; [evidencia JSON](evidence/power-integration.json) |
-| API → caché | Segunda solicitud `delivery=cache`, conservando procedencia y descarga |
-| Respuesta → gráfico/tabla | Valores del original y periodo comprobados; tabla/exportación disponibles |
-| Secuencias → motor → resultados | Tres resultados; escenario 100 % y 70 %; insumos faltantes no producen cifras inventadas |
-| Resultados → navegación | Se conservan al alternar Monitorear/Planificar; cambios de escenario/secuencia/contexto invalidan resultados anteriores |
-| Error de red/servidor | Fallos simulados explícitos permiten reintento o ejemplo; la interfaz permanece operativa |
-| Lanzador → procesos locales | Inicio real, detección de instancias propias, HTTP 200 y parada; 0 listeners restantes en 5173/8000 |
+| Backend: `.venv/Scripts/python.exe -m pytest -q` from `backend` | 50 passed; latest execution 2.66 seconds |
+| Frontend: `npm run build` | Passed TypeScript checks and production Vite build |
+| Browser full run: `npm run test:e2e` with free test ports 5175/8002 | 26 passed, 4 deliberately skipped duplicate device-independent geometry cases; 1.7 minutes |
+| Focused follow-up: `node node_modules/@playwright/test/cli.js test --grep '320px|historical date'` | 4 passed across desktop and mobile; 27.6 seconds |
+| Live NASA script: `backend/scripts/verify_power_integration.py` | HTTP 200, first delivery live, second cache, 31 complete daily rows; no mock |
+| Vercel configuration rules | Passed published configuration rules with a Draft 7 validator; no cloud build or deployment executed |
+| Restarted local launcher and proxy | Project page HTTP 200, API health HTTP 200, assistant status HTTP 200, authentic saved example HTTP 200 |
+| Unconfigured assistant over the actual local proxy | Typed HTTP 503 `assistant_not_configured`; authored guide remains available |
 
-## Comandos y resultados finales
+The full browser run was followed by a focused check after adding the upstream-error/date test and making the 320px check exercise actual keyboard focus. Across these runs, all 28 distinct active browser/geometry cases in the current suite passed. Four pure geometry cases execute once on desktop and are intentionally skipped as duplicates in the mobile project. No claim is made that a root-font-size change alone verifies browser zoom or text resizing.
 
-Desde `backend/`: `.venv\Scripts\python.exe -m pytest -q` → **27 passed in 1.11s**. Desde `frontend/`: `npm run build` → TypeScript y build correctos, sin advertencia de chunk grande; `npm run test:e2e` → **22 passed (25.5s)**.
+The published Vercel schema declares older draft metadata while using newer keywords in unused experimental trigger definitions. Strict schema meta-validation rejected that inconsistency. Evaluating the actual configuration against its published rules with the Draft 7 validator produced no errors. This is configuration validation, not proof of a successful Vercel cloud build.
 
-La suite de backend combina validaciones y pruebas unitarias con un archivo de observaciones auténtico. Las modificaciones de faltantes/unidades y el fallo 503 usan fixtures/mocks etiquetados; no se presentan como observaciones originales. La integración NASA real está separada en `scripts/verify_power_integration.py`; `scripts/refresh_demo.py` permite reproducir la descarga.
+## User-story coverage
 
-Navegador: Edge/Chromium local, escritorio 1440×1100 CSS px y emulación Pixel 7 393×727 CSS px. Sin desbordamiento horizontal de la página; tablas con desplazamiento local y foco de teclado. Axe sobre landing, formularios, gráfico y comparación con resultados, sin violaciones en las reglas comprobadas WCAG 2 A/AA y 2.1 AA. Teclado: salto al contenido, foco, Tab y Enter. No certifica accesibilidad integral ni funcionamiento en todos los dispositivos.
+- English landing page and six-module navigation on desktop and Pixel 7 emulation.
+- Valid, blank, out-of-range and zero coordinates; unknown soil/water and profile-area validation.
+- Polygon drawing through coordinates, map taps and keyboard-center controls; crossing and duplicate rejection, concave reference point, approximate area, validated GeoJSON draft import/export, reload persistence, delete and undo.
+- Authentic saved NASA record and expanded Agronomist observation table; no invented source values.
+- Three backend rotation comparisons at 100% and 70%, preserved editor state and invalidated stale results, plus reports/export.
+- Synthetic Gemini browser reply showing that a profile stays unchanged until explicit confirmation, then updates the actual form.
+- Missing-key/error handling, unchanged field data after chat errors, local guided steps, keyboard Escape/focus return, paused animation and reduced-motion preference.
+- 320px page reflow and keyboard skip link, with no horizontal page scrolling in the checked views. Wide data tables scroll within their labelled regions.
+- Automated axe checks with WCAG 2 A/AA, 2.1 AA and 2.2 AA tags on landing, overview, field editor, climate table, comparison, reports, help and companion states. The active-navigation and small step-number contrast issues found during the first run were corrected.
 
-Arranque/parada: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Start-AgroShift.ps1 -NoBrowser` y luego `-Stop`. Se verificaron reentrada, respuestas HTTP y puertos libres al parar. El lanzador emplea ventanas ocultas y solo para procesos propios. La opción de ejecución afecta al proceso, no a políticas globales.
+Gemini provider tests use explicitly synthetic HTTP responses. They cover missing keys, private status, correct Interactions headers/schema and disabled server conversation storage, invalid inputs/proposals, malformed replies, authentication/rate errors, timeout, server-resolved historical evidence, and recomputed scenario values. They do not prove real Google model access or eliminate natural-language hallucinations.
 
-## Hallazgos resueltos durante esta entrega
+## Observation evidence
 
-- Contraste bajo en textos secundarios de la landing: colores ajustados, pruebas repetidas.
-- Tabla móvil desplazable sin foco: región accesible con `tabIndex=0` y contorno visible.
-- Comparación reiniciada al alternar módulos: se conserva el componente una vez abierto; contexto cambiado sigue invalidando resultados.
-- Lectura de array de procesos del lanzador y Python hijo del venv: corregidas enumeración y parada, comprobando PID/fecha y relación parental/comando/puerto del hijo.
-- Bundle de Recharts superior a 500 kB con todo unido: carga diferida, chunk principal ~425 kB y panel climático ~406 kB.
+`docs/evidence/power-integration.json` records the fresh live NASA request retrieved at 2026-11-14T21:53:51.145195+00:00: API v2.10.3, 31 complete days, January 2025 at -12.05/-75.2, mean temperature 9.41 degrees C and rainfall total 60.64 mm. The authentic saved raw file and its SHA-256 remain unchanged. Its source manifest's explanatory limitations were translated to English.
 
-## Capturas generadas
+Current screenshots use `pacha-landing-*`, `pacha-overview-*`, `pacha-field-*`, `pacha-climate-*` and `pacha-companion-*` under `docs/evidence`. Older differently named images describe previous interfaces. Desktop overview and mobile companion screenshots were also visually inspected.
 
-- [Proyecto, escritorio](evidence/project-desktop.png) y [móvil](evidence/project-mobile.png).
-- [Clima, escritorio](evidence/climate-desktop.png) y [móvil](evidence/climate-mobile.png).
-- [Comparación, escritorio](evidence/comparison-desktop.png) y [móvil](evidence/comparison-mobile.png).
+## External checks still required
 
-La cartografía es real cuando el servicio OSM responde; puede estar todavía cargando al capturar. El gráfico climático se basa en el original NASA guardado. La ilustración de la página es conceptual y no representa una medición satelital.
+No private Gemini key is configured, so a real Gemini answer remains unverified. The owner's key must be entered privately, the API restarted/redeployed, and a real answer plus confirmed entry tested.
 
-Se revisaron visualmente las capturas de escritorio de proyecto, clima y comparación. Los dos tamaños cuentan además con las comprobaciones automatizadas descritas. La revisión documental final comprobó 10 Markdown y 33 enlaces locales: sin errores. Puertos de la demo libres al cerrar la verificación.
+No Vercel deployment was created. Follow `VERCEL_DEPLOYMENT.md`, then verify both services, the real chat flow and public incognito access. Services is currently Beta and its cache is ephemeral. Manual screen-reader and farmer usability testing remains outside the automated check results.
 
-## Pendientes que impiden declarar el MVP completo
-
-MODIS no integrado: los dos intentos REST ORNL terminaron en timeout. No hay segundo producto NASA, QA NDVI ni ingesta satelital incremental. Tampoco hay validación agronómica regional, modelo de rendimiento, ETc sin insumos o ML. La prueba de clima se demostró con una ubicación/periodo reales; no acredita precisión mundial. El perfil no persiste tras recargar, no hay autenticación y la app escucha solo localmente.
-
-Próximo paso: ensayar el [guion de demo](demo-guide.md); después resolver el acceso MODIS con evidencia auténtica, sin cambiar los límites de lo que se presenta hoy.
-
-## Actualización de perfiles, polígono y nombre Pacha Pulse
-
-Verificación posterior en la carpeta Farm_Project confirmada por el usuario: **34 passed, 4 skipped (1.7m)** en Playwright (30 recorridos de navegador + 4 pruebas de geometría; se omiten solo duplicados móviles de geometría pura). Backend **27 passed in 2.49s**. Build TypeScript/Vite correcto: principal 456,88 kB y panel climático 406,25 kB. Axe incluye reglas WCAG 2.2 AA en el editor poligonal; sin violaciones detectadas en los casos comprobados.
-
-La suite comprueba dibujo por clics/coordenadas y teclado sin arrastre, edición, persistencia local, importación inválida/válida, GeoJSON exportado, eliminación/deshacer y cambio de modo sin perder datos. Pruebas puras cubren área de referencia, cierre del anillo, concavidad, punto dentro de geometría, cruces, duplicados, rango, área nula, antimeridiano y rechazo de archivos no admitidos.
-
-Las primeras pruebas sobre el puerto 5173 encontraron otra copia desde Project_Farm y se interrumpieron. Tras confirmar el usuario que la entrega era Farm_Project, se aislaron puertos y se corrigió una etiqueta ambigua del selector. Suite final completa satisfactoria. No se alteró la otra carpeta ni su servidor.
-
-Lanzador nuevo verificado: seleccionó 5174/8001 con 5173/8000 ocupados; página Pacha Pulse 200 y proxy health correcto. Reentrada correcta. La parada dejó 0 listeners de esta copia y conservó los 2 de la otra. Contrato y límites: [functional-handoff.md](functional-handoff.md). Capturas del editor: [escritorio](evidence/pacha-parcel-desktop.png) y [móvil](evidence/pacha-parcel-mobile.png). Se revisó visualmente la captura de escritorio; la comprobación móvil es automatizada.
+Local delivery is running at http://localhost:5174 (API 8001). Test-only processes were stopped by Playwright. The separate Project_Farm version was not edited or stopped.

@@ -14,5 +14,5 @@ class HealthResponse(BaseModel):
 
 @router.get("/health", response_model=HealthResponse, tags=["Estado"])
 def health() -> HealthResponse:
-    """Confirma únicamente que la API está activa; no certifica fuentes NASA."""
+    """Check API availability; this does not certify upstream NASA availability."""
     return HealthResponse()

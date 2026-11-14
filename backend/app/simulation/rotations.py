@@ -1,4 +1,4 @@
-"""Comparación estructural de secuencias, sin modelo de rendimiento ni aptitud."""
+"""Structural sequence comparisons without yield or suitability predictions."""
 
 from datetime import date
 from typing import Literal
@@ -9,8 +9,8 @@ from app.clients.power import validate_period
 from app.data.climate_schemas import Metric
 
 CROPS = {
-    "maize": "Maíz", "wheat": "Trigo", "potato": "Papa", "bean": "Frijol",
-    "lentil": "Lenteja", "quinoa": "Quinua", "fallow": "Descanso / barbecho",
+    "maize": "Maize", "wheat": "Wheat", "potato": "Potato", "bean": "Bean",
+    "lentil": "Lentil", "quinoa": "Quinoa", "fallow": "Fallow / rest",
 }
 CropId = Literal["maize", "wheat", "potato", "bean", "lentil", "quinoa", "fallow"]
 
@@ -32,7 +32,7 @@ class ClimateReference(BaseModel):
     def valid(self):
         validate_period(self.start, self.end)
         if self.saved_example and (self.lat != -12.05 or self.lon != -75.2 or self.start != date(2025, 1, 1) or self.end != date(2025, 1, 31)):
-            raise ValueError("El ejemplo guardado solo corresponde a Mantaro, enero de 2025.")
+            raise ValueError("The saved example only covers Mantaro in January 2025.")
         return self
 
 
@@ -50,9 +50,9 @@ class StructureMetric(BaseModel):
     value: int
     unit: str
     status: Literal["derived"] = "derived"
-    source: str = "Secuencias de escenario ingresadas por el usuario"
-    period: str = "Tres campañas consecutivas, sin fechas asignadas"
-    quality: str = "Cálculo determinista de estructura, sin validación de idoneidad"
+    source: str = "Scenario sequences entered by the user"
+    period: str = "Three consecutive campaigns with no assigned dates"
+    quality: str = "Deterministic structural calculation, not a suitability assessment"
 
 
 class RotationResult(BaseModel):
@@ -89,42 +89,42 @@ def compare(request: CompareRequest, rainfall: dict | None = None) -> CompareRes
         fallow = rotation.crops.count("fallow")
         notes = []
         if distinct > 1:
-            notes.append("Incluye varios cultivos: requiere revisar calendarios, maquinaria, experiencia y mercados para cada uno.")
+            notes.append("Several crops are included. Check the calendar, equipment, experience and markets needed for each.")
         else:
-            notes.append("Menor variedad de cultivos en la secuencia; la simplicidad de manejo no demuestra sostenibilidad ni rentabilidad.")
+            notes.append("Fewer crop types in this sequence. Simpler management does not prove sustainability or profitability.")
         if repeats:
-            notes.append("Hay repetición consecutiva del mismo cultivo. Revisar riesgos agronómicos con un asesor; no se estima probabilidad de plagas.")
+            notes.append("The same crop repeats in consecutive campaigns. Review agronomic risks with an adviser; no pest probability is estimated.")
         if fallow:
-            notes.append("El descanso no equivale a cobertura vegetal: verificar manejo de suelo, malezas y periodos sin cosecha.")
-        notes.append("La compatibilidad local cultivo–suelo–clima–manejo está sin evaluar. Más diversidad no significa mayor rendimiento.")
+            notes.append("Fallow does not mean ground cover. Review soil, weeds and periods without a harvest.")
+        notes.append("Local crop, soil, climate and management compatibility is not assessed. More diversity does not mean higher yield.")
         results.append(RotationResult(name=rotation.name, crops=rotation.crops, labels=[CROPS[crop] for crop in rotation.crops], baseline=index == 0,
-                                      distinct_crops=StructureMetric(value=distinct, unit="cultivos distintos"),
-                                      consecutive_repetitions=StructureMetric(value=repeats, unit="transiciones repetidas"),
-                                      fallow_campaigns=StructureMetric(value=fallow, unit="campañas de descanso"), tradeoffs=notes))
+                                      distinct_crops=StructureMetric(value=distinct, unit="distinct crops"),
+                                      consecutive_repetitions=StructureMetric(value=repeats, unit="repeated transitions"),
+                                      fallow_campaigns=StructureMetric(value=fallow, unit="fallow campaigns"), tradeoffs=notes))
     if rainfall and rainfall["value"] is not None:
         scenario = {**rainfall, "value": round(rainfall["value"] * request.rainfall_percent / 100, 2), "status": "scenario",
-                    "quality": "Hipótesis, no pronóstico", "limitations": [
-                        "Lluvia histórica del periodo × porcentaje de escenario; igual para las tres secuencias.",
-                        "No representa campañas futuras, precipitación efectiva, agua de riego ni balance hídrico de cultivos."]}
+                    "quality": "Hypothesis, not a forecast", "limitations": [
+                        "Historical rainfall for the period × scenario percentage; identical for all three sequences.",
+                        "Does not represent future campaigns, effective rainfall, irrigation water or crop water balance."]}
     else:
-        scenario = {"value": None, "unit": "mm", "status": "unavailable", "source": "Sin lluvia histórica completa",
-                    "observed_at": "Sin periodo climático utilizable", "retrieved_at": "No aplica", "spatial_resolution": "No disponible",
-                    "quality": "Insuficiente", "limitations": ["Consulta primero una serie climática completa en Monitorear."]}
+        scenario = {"value": None, "unit": "mm", "status": "unavailable", "source": "No complete historical rainfall series",
+                    "observed_at": "No usable climate period", "retrieved_at": "Not applicable", "spatial_resolution": "Unavailable",
+                    "quality": "Insufficient", "limitations": ["First load a complete historical series in NASA climate."]}
     warnings = [
-        "Comparación exploratoria de estructura. No se calcula una mejor rotación ni una probabilidad de éxito.",
-        "Faltan ETo y Kc por etapa: demanda hídrica y balance de agua no disponibles (FAO-56: ETc = Kc × ETo).",
-        "Sin rendimientos, costos y precios verificados: producción y rentabilidad no disponibles.",
-        "Las campañas no tienen fechas ni duración; no se asignan estaciones según hemisferio.",
+        "Exploratory structural comparison. No best rotation or probability of success is calculated.",
+        "ETo and stage-specific Kc are missing: crop water demand and balance are unavailable (FAO-56: ETc = Kc × ETo).",
+        "Without verified yields, costs and prices, production and profitability are unavailable.",
+        "Campaigns have no dates or duration; seasons are not assigned by hemisphere.",
     ]
     if request.soil == "unknown":
-        warnings.append("Suelo desconocido: no es posible evaluar compatibilidad edáfica.")
+        warnings.append("Soil is unknown: soil compatibility cannot be assessed.")
     else:
-        warnings.append("El tipo de suelo es un dato del usuario; faltan propiedades, manejo y validación local de cada cultivo.")
+        warnings.append("Soil type is user input; properties, management and local crop validation are still missing.")
     if request.water == "unknown":
-        warnings.append("Disponibilidad de agua sin especificar: no se estima suficiencia de riego.")
+        warnings.append("Water availability is unspecified: irrigation sufficiency is not estimated.")
     if not request.habitual_confirmed:
-        warnings.append("La primera secuencia es una referencia ilustrativa; todavía no fue confirmada como habitual por el usuario.")
+        warnings.append("The first sequence is an illustrative reference; the user has not confirmed it as their usual rotation.")
     return CompareResponse(results=results, scenario_rainfall=Metric.model_validate(scenario),
                            baseline_rainfall=Metric.model_validate(rainfall) if rainfall else None,
                            rainfall_percent=request.rainfall_percent, habitual_confirmed=request.habitual_confirmed,
-                           warnings=warnings, method="structure-v1: cardinalidad de cultivos sin barbecho, repeticiones adyacentes y conteo de descansos. Sin ranking ni pesos.")
+                           warnings=warnings, method="structure-v1: count of distinct non-fallow crops, adjacent repetitions and fallow campaigns. No ranking or weights.")

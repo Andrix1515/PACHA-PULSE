@@ -17,15 +17,15 @@ export interface ParcelProperties {
 export type ParcelBoundary = Feature<Polygon, ParcelProperties>
 
 export function parseCoordinate(value: string): number {
-  if (!value.trim()) throw new Error('Completa ambas coordenadas.')
+  if (!value.trim()) throw new Error('Complete both coordinates.')
   const number = Number(value.replace(',', '.'))
-  if (!Number.isFinite(number)) throw new Error('Escribe coordenadas numéricas válidas.')
+  if (!Number.isFinite(number)) throw new Error('Enter valid numeric coordinates.')
   return number
 }
 
 export function validateVertex(vertex: Vertex) {
   if (!Number.isFinite(vertex.lat) || !Number.isFinite(vertex.lon) || Math.abs(vertex.lat) > MAX_MAP_LAT || Math.abs(vertex.lon) > 180) {
-    throw new Error('Para dibujar, usa latitudes entre −85,05112878 y 85,05112878 y longitudes entre −180 y 180.')
+    throw new Error('For drawing, use latitude from −85.05112878 to 85.05112878 and longitude from −180 to 180.')
   }
 }
 
@@ -34,20 +34,20 @@ export function verticesOf(boundary: ParcelBoundary | null): Vertex[] {
 }
 
 export function createBoundary(vertices: Vertex[], name: string): ParcelBoundary {
-  if (vertices.length < 3 || vertices.length > MAX_VERTICES) throw new Error('La parcela necesita entre 3 y 100 puntos distintos.')
+  if (vertices.length < 3 || vertices.length > MAX_VERTICES) throw new Error('A field needs between 3 and 100 distinct points.')
   vertices.forEach(validateVertex)
-  if (new Set(vertices.map(({ lat, lon }) => `${lat}:${lon}`)).size !== vertices.length) throw new Error('Hay puntos repetidos. Elimina el duplicado; el cierre se hace automáticamente.')
-  if (Math.max(...vertices.map((v) => v.lon)) - Math.min(...vertices.map((v) => v.lon)) >= 180) throw new Error('Esta herramienta no admite parcelas que crucen el antimeridiano. Divide esa zona antes de importarla.')
+  if (new Set(vertices.map(({ lat, lon }) => `${lat}:${lon}`)).size !== vertices.length) throw new Error('Some points are repeated. Remove duplicates; the ring closes automatically.')
+  if (Math.max(...vertices.map((v) => v.lon)) - Math.min(...vertices.map((v) => v.lon)) >= 180) throw new Error('Fields crossing the antimeridian are not supported. Split the area before importing.')
   const ring = vertices.map(({ lat, lon }) => [lon, lat])
   ring.push([...ring[0]])
   const feature: Feature<Polygon> = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } }
-  if (kinks(feature).features.length) throw new Error('Los lados del polígono se cruzan o se tocan. Reordena o corrige los puntos.')
+  if (kinks(feature).features.length) throw new Error('Polygon edges cross or touch. Reorder or correct the points.')
   const squareMetres = area(feature)
-  if (!Number.isFinite(squareMetres) || squareMetres < 1) throw new Error('El contorno debe encerrar al menos 1 m²; los puntos no pueden estar alineados.')
-  if (squareMetres > 10_000_000_000) throw new Error('Delimita una zona de hasta 1 000 000 ha por parcela.')
+  if (!Number.isFinite(squareMetres) || squareMetres < 1) throw new Error('The outline must enclose at least 1 m²; the points cannot be collinear.')
+  if (squareMetres > 10_000_000_000) throw new Error('Draw a field of at most 1,000,000 ha.')
   return { ...feature, properties: {
-    name: name.trim().slice(0, 80) || 'Parcela delimitada', status: 'user_input', source: 'Contorno dibujado o importado por el usuario, WGS84', updated_at: new Date().toISOString(),
-    area: { value: squareMetres / 10000, unit: 'ha', status: 'derived', source: 'Área esférica Turf a partir del contorno del usuario', quality: 'Aproximada; sin precisión catastral', limitations: ['No incluye pendiente ni relieve.', 'La precisión depende de los puntos y de la cartografía, no del número de decimales.', 'No aumenta la resolución de NASA POWER ni valida propiedad o aptitud agrícola.'] },
+    name: name.trim().slice(0, 80) || 'Outlined field', status: 'user_input', source: 'Outline drawn or imported by the user, WGS84', updated_at: new Date().toISOString(),
+    area: { value: squareMetres / 10000, unit: 'ha', status: 'derived', source: 'Turf spherical area calculated from the user outline', quality: 'Approximate; not cadastral precision', limitations: ['Does not account for slope or terrain.', 'Accuracy depends on the points and map, not the number of decimal places.', 'Does not increase NASA POWER resolution or validate ownership or agricultural suitability.'] },
   } }
 }
 
@@ -61,22 +61,22 @@ export function containsPoint(boundary: ParcelBoundary, vertex: Vertex): boolean
 }
 
 export function importBoundary(input: unknown): ParcelBoundary {
-  if (!input || typeof input !== 'object') throw new Error('El archivo debe ser GeoJSON válido.')
+  if (!input || typeof input !== 'object') throw new Error('The file must contain valid GeoJSON.')
   let candidate = input as Record<string, unknown>
   if (candidate.type === 'FeatureCollection') {
-    if (!Array.isArray(candidate.features) || candidate.features.length !== 1) throw new Error('Importa una sola parcela por archivo (una Feature de tipo Polygon).')
+    if (!Array.isArray(candidate.features) || candidate.features.length !== 1) throw new Error('Import one field per file (one Polygon Feature).')
     candidate = candidate.features[0] as Record<string, unknown>
   }
-  if (!candidate || typeof candidate !== 'object') throw new Error('La parcela GeoJSON no es válida.')
+  if (!candidate || typeof candidate !== 'object') throw new Error('The GeoJSON field is invalid.')
   const properties = candidate.type === 'Feature' && candidate.properties && typeof candidate.properties === 'object' ? candidate.properties as Record<string, unknown> : {}
   const geometry = (candidate.type === 'Feature' ? candidate.geometry : candidate) as Record<string, unknown> | null
-  if (!geometry || geometry.type !== 'Polygon' || !Array.isArray(geometry.coordinates) || geometry.coordinates.length !== 1) throw new Error('Se admite un Polygon simple sin huecos, en WGS84 y orden [longitud, latitud].')
+  if (!geometry || geometry.type !== 'Polygon' || !Array.isArray(geometry.coordinates) || geometry.coordinates.length !== 1) throw new Error('Use a simple Polygon without holes, in WGS84 [longitude, latitude] order.')
   const ring = geometry.coordinates[0] as unknown
-  if (!Array.isArray(ring) || ring.length < 4 || ring.length > MAX_VERTICES + 1) throw new Error('El anillo GeoJSON debe estar cerrado y tener de 3 a 100 vértices.')
+  if (!Array.isArray(ring) || ring.length < 4 || ring.length > MAX_VERTICES + 1) throw new Error('The GeoJSON ring must be closed and contain 3 to 100 vertices.')
   const points = ring.map((item) => {
-    if (!Array.isArray(item) || item.length !== 2 || typeof item[0] !== 'number' || typeof item[1] !== 'number') throw new Error('Cada punto debe contener solo [longitud, latitud] numéricas.')
+    if (!Array.isArray(item) || item.length !== 2 || typeof item[0] !== 'number' || typeof item[1] !== 'number') throw new Error('Each point must contain only numeric [longitude, latitude].')
     return { lon: item[0], lat: item[1] }
   })
-  if (points[0].lat !== points.at(-1)!.lat || points[0].lon !== points.at(-1)!.lon) throw new Error('El anillo GeoJSON no está cerrado.')
+  if (points[0].lat !== points.at(-1)!.lat || points[0].lon !== points.at(-1)!.lon) throw new Error('The GeoJSON ring is not closed.')
   return createBoundary(points.slice(0, -1), typeof properties.name === 'string' ? properties.name : '')
 }

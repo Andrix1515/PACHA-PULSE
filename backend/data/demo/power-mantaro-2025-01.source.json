@@ -1,0 +1,16 @@
+{
+  "source": "NASA POWER",
+  "request_url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M%2CT2M_MIN%2CT2M_MAX%2CPRECTOTCORR&community=AG&latitude=-12.05&longitude=-75.2&start=20250101&end=20250131&format=JSON&time-standard=UTC",
+  "retrieved_at": "2026-11-14T19:32:14.042202+00:00",
+  "sha256": "8b8b665374da3464d30b855f26e7ba8c0b4623a86fce5d3c625accf044aef403",
+  "synthetic": false,
+  "product_version": "v2.10.3",
+  "period": "2025-01-01/2025-01-31",
+  "lat": -12.05,
+  "lon": -75.2,
+  "limitations": [
+    "Serie histórica NASA POWER basada en productos de rejilla; no es una estación en tu parcela ni un pronóstico.",
+    "La rejilla meteorológica MERRA-2 es nominalmente 0,5° × 0,625°; el relieve de montaña puede no quedar representado.",
+    "La precipitación de rejilla no equivale a agua aprovechable por un cultivo."
+  ]
+}

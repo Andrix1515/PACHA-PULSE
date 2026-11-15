@@ -11,6 +11,7 @@ from app.api.routes.health import router as health_router
 from app.api.routes.observations import router as observations_router
 from app.api.routes.rotations import router as rotations_router
 from app.api.routes.assistant import router as assistant_router
+from app.api.routes.places import router as places_router
 
 app = FastAPI(
     title="Pacha Pulse API",
@@ -21,6 +22,7 @@ app.include_router(health_router, prefix="/api/v1")
 app.include_router(observations_router, prefix="/api/v1")
 app.include_router(rotations_router, prefix="/api/v1")
 app.include_router(assistant_router, prefix="/api/v1")
+app.include_router(places_router, prefix="/api/v1")
 
 
 @app.exception_handler(HTTPException)

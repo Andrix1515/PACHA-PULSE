@@ -1,0 +1,115 @@
+{
+  "results": [
+    {
+      "id": "R288247--6.8699697--75.0458515",
+      "label": "Peru",
+      "lat": -6.8699697,
+      "lon": -75.0458515,
+      "bounds": [
+        [
+          -20.1984472,
+          -84.6356535
+        ],
+        [
+          -0.0392818,
+          -68.6519906
+        ]
+      ],
+      "kind": "country",
+      "country_code": "PE"
+    },
+    {
+      "id": "R126740-41.3272919--89.1287636",
+      "label": "Peru, Illinois, United States",
+      "lat": 41.3272919,
+      "lon": -89.1287636,
+      "bounds": [
+        [
+          41.309511,
+          -89.183075
+        ],
+        [
+          41.382106,
+          -89.105732
+        ]
+      ],
+      "kind": "city",
+      "country_code": "US"
+    },
+    {
+      "id": "R127432-40.7537253--86.0690325",
+      "label": "Peru, Indiana, United States",
+      "lat": 40.7537253,
+      "lon": -86.0690325,
+      "bounds": [
+        [
+          40.7338255,
+          -86.1353754
+        ],
+        [
+          40.787121,
+          -86.0423896
+        ]
+      ],
+      "kind": "city",
+      "country_code": "US"
+    },
+    {
+      "id": "R130148-37.0813287--96.0963758",
+      "label": "Peru, Kansas, United States",
+      "lat": 37.0813287,
+      "lon": -96.0963758,
+      "bounds": [
+        [
+          37.073579,
+          -96.1004411
+        ],
+        [
+          37.091578,
+          -96.0898173
+        ]
+      ],
+      "kind": "city",
+      "country_code": "US"
+    },
+    {
+      "id": "R13562946-44.578486--73.527031",
+      "label": "Peru, New York, United States",
+      "lat": 44.578486,
+      "lon": -73.527031,
+      "bounds": [
+        [
+          44.523548,
+          -73.731191
+        ],
+        [
+          44.6332056,
+          -73.3613339
+        ]
+      ],
+      "kind": "city",
+      "country_code": "US"
+    },
+    {
+      "id": "R12181039-44.5265232--70.4638777",
+      "label": "Peru, Maine, United States",
+      "lat": 44.5265232,
+      "lon": -70.4638777,
+      "bounds": [
+        [
+          44.4216242,
+          -70.5606164
+        ],
+        [
+          44.5318531,
+          -70.3489143
+        ]
+      ],
+      "kind": "city",
+      "country_code": "US"
+    }
+  ],
+  "source": "OpenStreetMap contributors / Photon by komoot",
+  "retrieved_at": "2026-11-15T06:34:04.370386+00:00",
+  "cached": false
+}

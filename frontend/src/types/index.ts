@@ -2,8 +2,9 @@ export type WorkspaceView = 'monitoring' | 'planning'
 export type AppView = 'overview' | 'parcel' | 'monitoring' | 'planning' | 'charts' | 'reports' | 'help'
 export interface ClimateReference { lat: number; lon: number; start: string; end: string; saved_example: boolean }
 export interface ComparisonInput { rotations: Rotation[]; rainfall_percent: number; habitual_confirmed: boolean; soil: AgriculturalProfile['soil']; water: AgriculturalProfile['water']; climate: ClimateReference | null }
-export interface AssistantProposal { kind: 'navigate' | 'update_profile' | 'set_location'; label: string; reason: string; view?: AppView | null; profile?: Partial<AgriculturalProfile> | null; location?: { lat: number; lon: number } | null }
-export interface AssistantContext { view: AppView; role: UserRole; profile: AgriculturalProfile; location: { lat: number; lon: number } | null; parcel_area_ha: number | null; climate: ClimateReference | null; comparison: ComparisonInput | null }
+export interface AssistantProposal { kind: 'navigate' | 'update_profile' | 'set_location'; label: string; reason: string; view?: AppView | null; scene?: JourneyContext['scene'] | null; profile?: Partial<AgriculturalProfile> | null; location?: { lat: number; lon: number } | null }
+export interface JourneyContext { scene: 'welcome' | 'field' | 'profile' | 'climate' | 'planning' | 'charts' | 'summary' | 'help'; step: number; detail: string; mode: 'guided' | 'explore' }
+export interface AssistantContext { journey?: JourneyContext; view: AppView; role: UserRole; profile: AgriculturalProfile; location: { lat: number; lon: number } | null; parcel_area_ha: number | null; climate: ClimateReference | null; comparison: ComparisonInput | null }
 export interface ChartSpec { metric: 'rainfall' | 'temperature' | 'rotation_structure'; chart_type: 'bar' | 'line'; aggregation: 'daily' | 'weekly' }
 export interface ChartArtifact {
   id: string; spec: ChartSpec; title: string; description: string; source: string; period: string; retrieved_at: string; created_at: string; spatial_resolution: string; quality: 'complete' | 'partial'; status: 'derived'

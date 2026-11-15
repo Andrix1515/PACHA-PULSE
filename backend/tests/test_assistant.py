@@ -33,6 +33,28 @@ def test_status_does_not_return_key(monkeypatch):
     assert "synthetic-test-key" not in json.dumps(body)
 
 
+def test_guided_scene_context_and_compatible_navigation():
+    context = {"scene": "profile", "step": 2, "detail": "water", "mode": "guided"}
+    parsed = ChatRequest(message="What does this question mean?", context={"view": "parcel", "journey": context})
+    assert parsed.context.journey.model_dump() == context
+    assert ChatRequest(message="Legacy client").context.journey is None
+    from app.assistant.schemas import Proposal
+    proposal = Proposal(kind="navigate", label="Review water", reason="You asked to review your inputs.", view="parcel", scene="profile")
+    assert proposal.scene == "profile"
+    with pytest.raises(ValidationError):
+        Proposal(kind="navigate", label="Bad target", reason="Synthetic mismatch.", view="monitoring", scene="profile")
+
+
+@pytest.mark.parametrize("journey", [
+    {"scene": "missing", "step": 1, "detail": "crop"},
+    {"scene": "profile", "step": 6, "detail": "crop"},
+    {"scene": "profile", "step": 2, "detail": "x" * 41},
+    {"scene": "profile", "step": 2, "detail": "crop", "execute": "arbitrary"},
+])
+def test_invalid_journey_context_rejected_before_provider(journey):
+    assert request("POST", "/api/v1/assistant/chat", json={"message": "Help", "context": {"journey": journey}}).status_code == 422
+
+
 @pytest.mark.parametrize("payload", [
     {"message": "x" * 2001},
     {"message": "hello", "context": {"location": {"lat": 91, "lon": 0}}},
@@ -55,11 +77,12 @@ def test_mock_gemini_request_and_reviewable_profile_proposal(monkeypatch):
         assert payload["model"] == service.DEFAULT_MODEL
         assert next(tool for tool in payload["tools"] if tool["name"] == "respond_to_user")["parameters"]["properties"]["proposals"]
         assert json.loads(payload["input"][0]["content"][0]["text"])["screen_context"]["server_evidence"] is None
+        assert json.loads(payload["input"][0]["content"][0]["text"])["screen_context"]["journey"]["detail"] == "crop"
         assert payload["generation_config"]["max_output_tokens"] == 1600
         return httpx.Response(200, json={"status": "completed", "steps": [{"type": "thought", "text": "private reasoning is not returned"}, {"type": "model_output", "content": [{"type": "text", "text": json.dumps(mock_reply)}]}]})
     async def run():
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-            return await service.reply(ChatRequest(message="I grow maize on 2 hectares."), client)
+            return await service.reply(ChatRequest(message="I grow maize on 2 hectares.", context={"view": "parcel", "journey": {"scene": "profile", "step": 2, "detail": "crop", "mode": "guided"}}), client)
     response = asyncio.run(run())
     assert response.proposals[0].profile.areaHa == 2
     assert response.evidence == "interface_only"

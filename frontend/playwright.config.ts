@@ -9,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   workers: 2,
   reporter: 'list',
-  use: { baseURL: `http://127.0.0.1:${webPort}`, trace: 'retain-on-failure' },
+  use: { baseURL: `http://127.0.0.1:${webPort}`, trace: 'retain-on-failure', reducedMotion: 'reduce' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Edge'], channel: 'msedge', viewport: { width: 1440, height: 1100 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'], defaultBrowserType: 'chromium', channel: 'msedge' } },

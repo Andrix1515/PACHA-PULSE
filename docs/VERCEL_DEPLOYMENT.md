@@ -55,14 +55,14 @@ Select **Deploy**, then inspect the build logs. Both `web` and `api` should be b
 
 Open these on your actual domain:
 
-1. `/` — English project landing page, panorama and Open the demo.
+1. `/` — English guided role-selection scene. The informational page is at `/#project`.
 2. `/api/v1/health` — JSON containing `status: "ok"` and the legacy compatibility ID `service: "agroshift-api"`.
 3. `/api/v1/assistant/status` — JSON with `configured: true` if the key is set. This confirms configuration presence, not a successful Google response.
 4. `/#climate` — open the authentic Mantaro January 2025 example. Expect 31 rows, displayed mean 9.4 °C and rainfall total 60.6 mm. The exact exported values are 9.41 °C and 60.64 mm.
 5. `/#rotations` — compare three sequences, then try 70% rainfall. With that saved climate, the scenario is 42.45 mm before one-decimal display rounding. This is hypothetical, not a forecast.
 6. `/#charts` - prepare a manual rainfall or temperature chart, try 7-day groups and export exact values. Charts work without Gemini.
-7. **Ask Pacha → Ask Pacha · AI** — send “Explain the available rainfall in simple terms.” Confirm a real answer arrives. Ask "Create a 7-day rainfall bar chart from my loaded observations" and verify that the chart appears in Charts with its source and period. Then send “My current crop is maize and my field area is 2 hectares.” Review a proposed update and confirm it; check My field afterward. A structured model response may ask a clarifying question instead of proposing an edit.
-8. On a phone, open navigation, enter field details, open/close the companion, and export a report. Test actual touch and keyboard behavior where relevant.
+7. **Ask Pacha** — send “Explain the available rainfall in simple terms.” Confirm a real answer arrives. Ask "Create a 7-day rainfall bar chart from my loaded observations" and verify that the chart appears in Charts with its source and period. Then send “My current crop is maize and my field area is 2 hectares.” Review a proposed update and confirm it; check About my field afterward. A structured model response may ask a clarifying question instead of proposing an edit.
+8. On a phone, open the cloud Menu, answer the field questions, open/close the companion, and export a report. Test actual touch and keyboard behavior where relevant.
 
 The repository's Gemini tests use synthetic provider replies. **A real Google request is still required after you configure your key.** Do not present mocked test success or `configured:true` as proof of live Gemini access.
 
@@ -84,3 +84,15 @@ Share the production project page and optionally its `/#demo` link. Keep the sav
 - **Data persistence:** only the saved field outline is retained in that browser. Profile, conversations and computed results clear on reload; export a report/GeoJSON before leaving. There is no shared farm database or sign-in.
 
 For future updates, push your changes to the configured production branch and inspect Vercel's new deployment. Re-run the checks above before giving the jury the updated URL.
+
+## Guided-scene branch note (2026-11-15)
+
+This local visual delivery is on TetoFan. Select the intended branch/commit before creating a deployment. The frontend and optional assistant schema extensions must be deployed together; no root service configuration change is required. Run `npm ci` to install the pinned Three.js dependency. The model loads lazily and has an SVG fallback if WebGL 2 is unavailable. A Vite chunk-size advisory for the 3D bundle is informational; the production build completes.
+
+The public `/` route now starts role selection, followed by a full-screen map, field questions and focused weather/planting scenes. `/#demo` is an entry alias; `/#project` retains the information page. Use **Menu** to navigate and change motion/guidance preferences. Confirmed profile, query point and progress survive same-tab reload; scientific results and chat do not. No new environment variable or external provider was added.
+
+## Map-depth additions
+
+Place search is a backend route, so deploy the frontend and updated API together. It uses the public Photon demo by default and needs no key. `PHOTON_SEARCH_URL` may select an operator-controlled HTTPS-compatible endpoint. Searches are explicit, bounded and cached per process; for many cloud instances, use an appropriate provider/shared limiter. Check a real country search and source attribution after deployment. Manual map coordinates remain a fallback.
+
+The field's 3D view is lazy and illustrative, with SVG fallback. Self-hosted font files must remain under `frontend/public/fonts` alongside their license. No new terrain or crop-growth service is configured. A successful 3D display is not evidence of soil/growth measurements. No deployment was run as part of this local change.

@@ -22,9 +22,9 @@ Scenario rainfall = complete historical period total times chosen percentage / 1
 
 ## Companion explanations
 
-The six-step guide is authored interface guidance. Gemini chat is clearly identified as AI and can be wrong. The backend supplies verified climate summaries from the saved source or local cache, plus recomputed structural counts. It does not accept client-supplied climate totals as observations. Missing cached evidence stays unavailable. User profile and outline area remain user-provided context, never verified measurements.
+The persistent scene guide and optional six-step tour are authored interface guidance, not generated model answers. Each weather lesson shows one metric and one chart; source, period, location and quality remain visible. Pacha can restate the same lesson without a network call. One millimetre of rain corresponds to one litre per square metre; this does not estimate effective root-zone water. Gemini chat is clearly identified as AI and can be wrong. The backend supplies verified climate summaries from the saved source or local cache, plus recomputed structural counts. It does not accept client-supplied climate totals as observations. Missing cached evidence stays unavailable. User profile and outline area remain user-provided context, never verified measurements.
 
-Gemini extracts only stated profile values and explicit coordinates. It proposes typed, bounded actions; the interface displays values before confirmation. Unknown fields and actions are rejected. A confirmation can refresh the profile draft, which the proposal explains. The model has no autonomous execution capability. Prompt instructions constrain interpretation but cannot guarantee every natural-language answer is correct; human review remains necessary.
+Gemini extracts only stated profile values and explicit coordinates. It proposes typed, bounded actions; the interface displays values before confirmation. Unknown fields and actions are rejected. A confirmation can refresh the profile draft, which the proposal explains. No autonomous field changes or arbitrary code execution are enabled. Prompt instructions constrain interpretation but cannot guarantee every natural-language answer is correct; human review remains necessary.
 
 ## Agent and manual chart arithmetic
 
@@ -35,3 +35,17 @@ Daily groups contain one day. Weekly charts use consecutive groups of up to seve
 Rotation charts recompute distinct non-fallow crops, adjacent non-fallow repeats and fallow campaigns from the current three sequences. Three series share a count axis; dates and rainfall aggregation are not applied to these categorical sequences. No bar height is a crop suitability score. Charts preserve sources, periods, retrieval times, nominal resolution, derived status, quality and limitations.
 
 The Gemini agent can inspect evidence and request supported chart configurations. Its loop is bounded; tools never write profiles, geometry, files or credentials. Profile and point proposals still require review. Prepared chart snapshots are read-only outputs and can be created directly on request. If model continuation fails after arithmetic succeeds, the application returns the real chart with an honest explanation-status notice.
+
+## Progressive presentation (2026-11-15)
+
+Grower questions, weather lessons and rotation steps reuse the existing calculations. Fewer visible numbers never change scientific methods, missing-value rules or source metadata. Agronomist mode opens tables/methods by default and uses identical evidence. Animation is decorative and never the only indication of status. No voice recording, speech output or continuous autonomous model execution was introduced.
+
+Profile, query point and last scene now survive a same-tab reload through bounded, validated sessionStorage. Results are deliberately not restored as current observations: the user must explicitly reload a period. A retained outline remains user input and never changes NASA grid resolution.
+
+## 3D and crop-reference boundaries (2026-11-15)
+
+The 3D view converts saved WGS84 coordinates to a local equirectangular footprint, applies one display scale and extrudes a flat schematic surface. It does not sample elevation, imagery, soil or plant density. Display plants form a bounded grid clipped to the actual concave outline. Stage numbers are interface choices, not days or a calibrated phenological model. Campaign crop IDs come from the current comparison when available; otherwise the preview crop is explicitly independent of the saved profile.
+
+The preliminary reference list compares the loaded period mean with cited general temperature bands: maize growth/photosynthesis 20-30 C, favourable potato daily means 18-20 C, indicative quinoa cultivation 15-20 C, and the published average-temperature range for common bean 15-23 C. Different reference contexts are disclosed. Wheat has no configured comparable band. Both edges are inclusive. Missing daily temperatures, absent observations or a different current query point leave the comparison unknown. An empty filtered list never means that nothing can grow in the region. There is no country-level crop ban, survival classification or suitability score. A selected historical month is not the growing season, and no new agronomic recommendation model is implemented.
+
+Country/region search only moves the viewport. It does not use a country centroid as a parcel, infer soil from a place name, or silently change NASA evidence. Coordinates and geometry remain separately confirmed inputs.

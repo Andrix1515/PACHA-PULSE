@@ -24,6 +24,14 @@ class PointInput(BaseModel):
     lon: float = Field(ge=-180, le=180, allow_inf_nan=False)
 
 
+class JourneyContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scene: Literal["welcome", "field", "profile", "climate", "planning", "charts", "summary", "help"]
+    step: int = Field(ge=0, le=5)
+    detail: str = Field(max_length=40)
+    mode: Literal["guided", "explore"] = "guided"
+
+
 class Context(BaseModel):
     model_config = ConfigDict(extra="forbid")
     view: View = "overview"
@@ -33,6 +41,7 @@ class Context(BaseModel):
     parcel_area_ha: float | None = Field(default=None, gt=0, le=1_000_000, allow_inf_nan=False)
     climate: ClimateReference | None = None
     comparison: CompareRequest | None = None
+    journey: JourneyContext | None = None
 
 
 class HistoryMessage(BaseModel):
@@ -53,6 +62,7 @@ class Proposal(BaseModel):
     label: str = Field(min_length=1, max_length=100)
     reason: str = Field(min_length=1, max_length=300)
     view: View | None = None
+    scene: Literal["welcome", "field", "profile", "climate", "planning", "charts", "summary", "help"] | None = None
     profile: ProfilePatch | None = None
     location: PointInput | None = None
 
@@ -60,6 +70,10 @@ class Proposal(BaseModel):
     def valid_action(self):
         if self.kind == "navigate" and self.view is None:
             raise ValueError("Navigation proposals need a valid view.")
+        if self.kind == "navigate" and self.scene is not None:
+            scene_views = {"welcome": "overview", "field": "parcel", "profile": "parcel", "climate": "monitoring", "planning": "planning", "charts": "charts", "summary": "reports", "help": "help"}
+            if scene_views[self.scene] != self.view:
+                raise ValueError("The scene must belong to the proposed module.")
         if self.kind == "update_profile" and (self.profile is None or not self.profile.model_dump(exclude_none=True)):
             raise ValueError("A profile proposal needs at least one field.")
         if self.kind == "set_location" and self.location is None:

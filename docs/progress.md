@@ -1,21 +1,25 @@
 # Progress - 2026-11-14
 
-## Implemented in this delivery
+## Current delivery: team character, chart agent and natural polygon closure
 
-- Adapted the supplied design into an English Pacha Pulse project page and six-module workspace, with responsive navigation, landscape illustration and paper cards.
-- Preserved validated polygon mapping, manual coordinate alternatives, GeoJSON import/export, local outline persistence, optional profiles, authentic historical NASA POWER and structural rotation comparisons.
-- Added original animated robot, pausable/reduced motion, a six-step authored guide and a server-side Gemini Interactions integration with typed proposals requiring confirmation.
-- Added combined reports and explicit boundaries for unsupported reference-design modules.
-- Prepared root Vercel Services web/API routing, server-only environment examples and temporary cloud cache configuration. Nothing was deployed or pushed.
-- Rewrote current project documentation in English; preserved the supplied archive and authentic NASA raw record.
+- Adapted the supplied Icon.jpeg character into a cream-and-green SVG rabbit with striped ears, leaf details, blink, ear sway, greeting, thinking and celebration states. Existing animation pause and reduced-motion controls apply to the new skin. The original JPEG is unchanged.
+- Clicking/tapping point 1 after at least three corners now closes and saves the polygon without a duplicate vertex. Enter and Space are supported. Crossed or invalid outlines remain editable drafts. Coordinate input and the explicit save button remain available.
+- Added Charts as a seventh English workspace module. Rainfall, temperature and rotation structure charts use deterministic backend values and retain source, period, quality and limitations. Daily/7-day climate grouping, accessible exact-value tables, JSON/CSV exports, six session snapshots and report export are implemented. The manual builder needs no Gemini key.
+- Upgraded the assistant to a bounded Gemini function-calling agent with allowlisted context inspection, chart creation and typed final response tools. All chart data comes from backend calculations; the model cannot submit arbitrary data arrays or code. Profile and coordinate changes still require confirmation. Completed tool steps and ready-chart links appear in chat.
+- Preserved the authentic NASA archive, existing climate/rotation behavior, validated geometry, keyboard alternatives, mobile layout and current Vercel service configuration. No Git write, push or cloud deployment was performed.
 
-## Validation
+## Executed validation
 
-Backend: 50 tests passed. Production TypeScript/Vite build passed. The full desktop/mobile browser run passed 26 cases, with four duplicate pure-geometry cases intentionally skipped on mobile. A focused follow-up passed four checks after the final date/error test and keyboard-reflow update, covering all 28 distinct active cases in the current suite across both runs. Automated WCAG checks found no remaining violations in the checked states. A fresh live NASA request returned 31 complete days and a second request confirmed cache delivery. Root Vercel configuration passed its published rules under a Draft 7 validator; no cloud build was executed. See `verification-demo.md` for the exact boundaries and evidence.
+- Backend: 68 tests passed in 1.33 seconds, including new deterministic chart arithmetic, missing-value rules, typed unsupported-data responses, multi-turn synthetic Gemini tool contracts, step limits, unknown-tool rejection and partial-success recovery.
+- Browser: 42 passed in 50.2 seconds on desktop Edge and Pixel 7 emulation. Four duplicate device-independent geometry tests are intentionally skipped on mobile. Includes pointer/keyboard polygon closure, invalid outlines, manual chart creation/export, report snapshots, synthetic agent UI, prior flows and automated WCAG checks.
+- Production TypeScript/Vite build passed again after final documentation and label cleanup.
+- Local web/API launcher restarted at http://localhost:5173, API 8000. The real local proxy returned HTTP 200 for health, status and the manual weekly chart: five groups, 60.64 mm total from the authentic saved January 2025 observations.
+- Screenshots for team skin/agent and manual charts were inspected. Detailed evidence is in `verification-demo.md`.
 
 ## Remaining external checks
 
-- A private Gemini key is not configured. Real model/network behavior has not been tested. The guide works without it.
-- The user must push this folder, import the repository into Vercel, configure secrets, deploy and verify the public production link. Services is currently Beta.
-- MODIS ingestion and validation remain unimplemented. Two integrated NASA products, validated suitability, forecasts and agronomic recommendations must not be claimed.
-- Manual testing with screen-reader users and farmers remains useful beyond automated accessibility checks.
+The actual local assistant status reports configured=false. A real Gemini answer remains unverified; synthetic provider tests are labelled accordingly. Configure the owner's private key and test a real tool-call exchange before demonstrating AI live. The manual chart builder and local guide already work.
+
+No Vercel cloud build or deployment was executed. The user must push this version and redeploy, then test the public URL. Existing deployment instructions now include Charts and the agent's bounded request budget.
+
+MODIS remains unimplemented. Crop suitability, soil measurements, pest diagnosis, yield/economic forecasts and persistent farm accounts are unavailable. Manual screen-reader and farmer usability testing remains useful beyond automated checks.

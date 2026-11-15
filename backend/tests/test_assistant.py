@@ -53,9 +53,9 @@ def test_mock_gemini_request_and_reviewable_profile_proposal(monkeypatch):
         assert outgoing.headers["Api-Revision"] == "2026-05-20"
         assert payload["store"] is False
         assert payload["model"] == service.DEFAULT_MODEL
-        assert payload["response_format"]["schema"]["properties"]["proposals"]
-        assert json.loads(payload["input"])["screen_context"]["server_evidence"] is None
-        assert payload["generation_config"]["max_output_tokens"] == 1200
+        assert next(tool for tool in payload["tools"] if tool["name"] == "respond_to_user")["parameters"]["properties"]["proposals"]
+        assert json.loads(payload["input"][0]["content"][0]["text"])["screen_context"]["server_evidence"] is None
+        assert payload["generation_config"]["max_output_tokens"] == 1600
         return httpx.Response(200, json={"status": "completed", "steps": [{"type": "thought", "text": "private reasoning is not returned"}, {"type": "model_output", "content": [{"type": "text", "text": json.dumps(mock_reply)}]}]})
     async def run():
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:

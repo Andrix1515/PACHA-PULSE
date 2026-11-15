@@ -15,7 +15,7 @@
 ## Assistant and deployment references
 
 - [Gemini models](https://aistudio.google.com/docs/models): configurable default `gemini-3.5-flash-lite`.
-- [Gemini Interactions API](https://aistudio.google.com/api-reference/interactions-api/create-interaction) and [structured output](https://aistudio.google.com/docs/structured-output): bounded server request, `store:false`, typed reply and proposals.
+- [Gemini Interactions API](https://aistudio.google.com/api-reference/interactions-api/create-interaction) and [structured output](https://aistudio.google.com/docs/structured-output), and [stateless function calling](https://aistudio.google.com/docs/function-calling#stateless-function-calling): bounded tool workflow, `store:false`, typed reply, deterministic chart tools and reviewable field proposals.
 - [Vercel Services](https://vercel.com/docs/services), [service configuration](https://vercel.com/docs/services/config-reference), [routing](https://vercel.com/docs/services/routing), and [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi): same-domain web/Python deployment preparation.
 
-The panorama is reused unchanged from the user's design archive (`public/art/panorama.jpg` within the archive). It is an illustration, not an observation. The animated robot is original SVG/CSS created for this implementation. The archive's fabricated measurements and fictional farmer identity are not imported.
+The panorama is reused unchanged from the user's design archive (`public/art/panorama.jpg` within the archive). It is an illustration, not an observation. The animated SVG/CSS character is adapted from the team-supplied Icon.jpeg. The original JPEG remains unchanged. The archive's fabricated measurements and fictional farmer identity are not imported.

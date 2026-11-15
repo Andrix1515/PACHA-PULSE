@@ -1,6 +1,6 @@
 # Pacha Pulse
 
-A field notebook for growers and agronomists: polygon mapping, historical NASA POWER climate, three crop rotations, exportable reports, and Pacha, a friendly guided companion with optional Gemini chat. All current application text and documentation are in English.
+A field notebook for growers and agronomists: polygon mapping, historical NASA POWER climate, three crop rotations, exportable reports, a manual chart builder, and Pacha, the team's cream-and-green rabbit companion with an optional Gemini tool-calling agent. All current application text and documentation are in English.
 
 ## Run locally on Windows
 
@@ -22,14 +22,15 @@ cd ..
 
 Copy `backend/.env.example` to `backend/.env`, enter your own `GEMINI_API_KEY` in that local file, and restart the backend. Never put credentials in the frontend or commit `.env`. Default model: `gemini-3.5-flash-lite`; override using `GEMINI_MODEL` if your account requires another supported model. Obtain a key privately in [Google AI Studio](https://aistudio.google.com/api-keys).
 
-The built-in six-step tour works without Gemini. AI chat explains the active module and available results, and proposes navigation, profile updates or explicit coordinates. You review proposed values and press **Confirm and apply** before forms change. Messages, recent conversation and current field context are sent to Google only when you send a question. `store:false` disables Interactions conversation storage; Google's account terms and processing policies still apply.
+The built-in six-step tour works without Gemini. The agent explains the active module, inspects current evidence and prepares charts through allowlisted server tools. Try "Create a 7-day rainfall bar chart from my loaded observations." It can also propose navigation, profile updates or explicit coordinates. Chart values come from deterministic server calculations, never model-generated arrays. Each question is bounded to three model requests, four nonterminal tools, three charts and a 48-second agent deadline. You review proposed values and press **Confirm and apply** before forms change. Messages, recent conversation and current field context are sent to Google only when you send a question. `store:false` disables Interactions conversation storage; Google's account terms and processing policies still apply.
 
 ## Demo route
 
-1. Open `/#demo`, then **My field**. Select a query point or draw a polygon. Save known profile details.
+1. Open `/#demo`, then **My field**. Select a query point or draw a polygon. After three corners, click/tap point 1 or press Enter/Space on it to close and save. The explicit save button is also available. Save known profile details.
 2. In **NASA climate**, load a historical period or select **Open real example: Mantaro Valley - January 2025**. The saved example explicitly moves the query point to Mantaro.
 3. In **Rotation planner**, edit your usual sequence and two alternatives, confirm the reference, and compare at 100% or 70% rainfall.
-4. Use **Ask Pacha** for guided steps or configured AI chat. Export your evidence through **Reports**.
+4. In **Charts**, prepare rainfall, temperature or rotation plots, choose daily/7-day grouping, and export JSON or CSV. Manual charts do not need Gemini.
+5. Use **Ask Pacha** for guided steps or configured AI chat. Export your evidence through **Reports**.
 
 **Grower** starts with simpler explanations. **Agronomist** expands the observation table and calculation method. Both use identical data and calculations. Work modes are presentation preferences, not authentication or access control.
 
@@ -43,7 +44,7 @@ NASA POWER is the only integrated NASA product. The saved Mantaro record is auth
 
 Rotations are structural comparisons: distinct crops, adjacent repeats and fallow campaigns. Rainfall scenarios multiply the historical total; no crop suitability ranking, yield, soil health, disease diagnosis, irrigation requirement or economic forecast is calculated. MODIS integration and its validation remain pending. The illustrated landscape from the supplied design is decorative.
 
-Only the saved polygon persists in this browser. Profile, chat and results last for the current page session. Export JSON and GeoJSON before leaving. Vercel's SQLite cache is temporary, not a persistent database.
+Only the saved polygon persists in this browser. Profile, chat, results and up to six chart snapshots last for the current page session. Chart sources and periods remain fixed when the current field changes, and chart snapshots are included in report exports. Export JSON and GeoJSON before leaving. Vercel's SQLite cache is temporary, not a persistent database.
 
 ## Checks
 

@@ -2668,3 +2668,63 @@ summary {
     padding:0
   }
 }
+
+/* Team rabbit skin: independent ears, screen blink, greeting and working states. */
+.rabbit-companion .robot-float { transform-origin:120px 170px; }
+.rabbit-companion .robot-eyes { transform-box:fill-box; transform-origin:center; }
+.rabbit-companion .robot-arm { transform-origin:157px 228px; }
+.rabbit-ear { animation:rabbit-ear-sway 5s ease-in-out infinite; }
+.rabbit-ear-left { transform-origin:78px 124px; }
+.rabbit-ear-right { transform-origin:168px 124px; animation-delay:-2s; animation-direction:reverse; }
+.rabbit-companion.is-thinking .rabbit-ear-left { animation:rabbit-listen 2s ease-in-out infinite; }
+.rabbit-companion.is-thinking .rabbit-ear-right { animation:rabbit-listen 2s ease-in-out infinite reverse; }
+.rabbit-companion.is-happy .robot-float { animation:rabbit-celebrate 2.5s ease-in-out infinite; }
+.rabbit-companion.is-happy .robot-arm { animation:robot-wave 2s ease-in-out infinite; }
+.companion-trigger>.rabbit-companion { width:72px; height:88px; margin-top:-21px; }
+.guide-content>.rabbit-companion { width:148px; height:174px; }
+.chat-welcome .rabbit-companion { width:100px; height:132px; }
+.pacha-thinking .rabbit-companion { width:48px; height:65px; }
+.robot-introduction .rabbit-companion { width:96px; height:130px; }
+.companion-invite>.rabbit-companion { width:210px; height:270px; }
+@keyframes rabbit-ear-sway { 0%,100% { transform:rotate(0); } 45% { transform:rotate(-4deg); } 65% { transform:rotate(2deg); } }
+@keyframes rabbit-listen { 0%,100% { transform:rotate(0); } 50% { transform:rotate(-10deg); } }
+@keyframes rabbit-celebrate { 0%,100% { transform:translateY(0); } 20%,40% { transform:translateY(-7px); } 30% { transform:translateY(-2px); } }
+.close-outline-point { background:#315d44; border-color:#fff8df; color:white; outline:3px solid #315d44; cursor:pointer; }
+.close-outline-hint { background:#e6eed7; border:1px solid #b1c598; color:#35572b; padding:12px 14px; border-radius:9px; font-size:12px; line-height:1.8; margin:13px 0; }
+.chart-builder>p { font-size:14px; color:#58684b; line-height:1.9; }
+.chart-builder form { display:grid; grid-template-columns:1.4fr 1fr 1fr auto; gap:15px; align-items:end; margin:23px 0 17px; }
+.chart-builder .secondary-button { margin-top:18px; }
+.chart-builder .chart-missing { padding:13px 16px; background:#f1ead4; border-radius:9px; font-size:13px; }
+.chart-missing .text-button { display:inline; min-height:44px; margin-left:7px; }
+.chart-library-note { margin:24px 0; font-size:12px; line-height:1.9; color:#5a6b4c; }
+.chart-library { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+.prepared-chart { min-width:0; }
+.prepared-chart .panel-title { margin-bottom:14px; }
+.prepared-chart .panel-title h2 { font-size:25px; }
+.chart-explanation { font-size:13px; color:#53654a; line-height:1.9; }
+.prepared-chart-graphic { height:290px; margin:18px -8px 16px; min-width:0; }
+.chart-source { padding:14px 0; border-top:1px solid #d3d8c0; font-size:11px; line-height:1.9; color:#576a4a; overflow-wrap:anywhere; }
+.chart-values { border-top:1px solid #d3d8c0; font-size:12px; color:#4e633f; }
+.chart-values ul { padding-left:18px; list-style:disc; font-size:12px; line-height:1.9; margin-top:14px; }
+.chart-downloads { display:flex; gap:18px; flex-wrap:wrap; margin-top:13px; }
+.chart-downloads .text-button { font-size:12px; }
+.agent-steps { border-top:1px solid #bfcca8; margin-top:12px; font-size:11px; color:#4d663b; }
+.agent-steps ul { list-style:disc; padding-left:16px; line-height:1.9; }
+.agent-chart-receipt { background:#fffaf0; padding:10px; border:1px solid #b4c6a0; border-radius:11px; margin-top:15px; display:flex; align-items:center; gap:8px; }
+.agent-chart-receipt>.rabbit-companion { width:52px; height:78px; flex-shrink:0; }
+.agent-chart-receipt>div { min-width:0; }
+.agent-chart-receipt strong { font-size:13px; }
+.agent-chart-receipt ul { padding-left:13px; margin:8px 0; list-style:disc; font-size:11px; color:#586b48; line-height:1.8; }
+.agent-chart-receipt .secondary-button { min-height:40px; padding:9px; font-size:11px; width:100%; }
+.assistant-notice .text-button { font-size:11px; min-height:36px; padding:6px 0 0; }
+@media(max-width:1180px) { .chart-builder form { grid-template-columns:1fr 1fr; } .chart-library { grid-template-columns:1fr; } }
+@media(max-width:600px) {
+  .guide-content>.rabbit-companion { width:125px; height:144px; }
+  .companion-trigger>.rabbit-companion { width:62px; height:79px; margin-top:-19px; }
+  .companion-invite>.rabbit-companion { width:140px; height:190px; }
+  .robot-introduction .rabbit-companion { width:80px; height:103px; }
+  .chart-builder form { grid-template-columns:1fr; gap:18px; }
+  .chart-builder select { font-size:16px; }
+  .chart-builder>p { font-size:13px; }
+  .prepared-chart .panel-title h2 { font-size:23px; }
+}

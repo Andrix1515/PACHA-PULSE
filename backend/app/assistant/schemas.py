@@ -3,8 +3,9 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.simulation.rotations import ClimateReference, CompareRequest
+from app.assistant.charts import ChartArtifact
 
-View = Literal["overview", "parcel", "monitoring", "planning", "reports", "help"]
+View = Literal["overview", "parcel", "monitoring", "planning", "charts", "reports", "help"]
 
 
 class ProfilePatch(BaseModel):
@@ -77,3 +78,5 @@ class ChatResponse(ModelReply):
     provider: Literal["gemini"] = "gemini"
     model: str
     evidence: Literal["verified_climate", "interface_only", "climate_unavailable"]
+    charts: list[ChartArtifact] = Field(default_factory=list, max_length=3)
+    tool_steps: list[str] = Field(default_factory=list, max_length=6)

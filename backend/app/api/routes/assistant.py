@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.assistant.schemas import ChatRequest, ChatResponse
 from app.assistant.service import AssistantError, configuration, reply
+from app.assistant.charts import ChartArtifact, ChartBuildRequest, ChartDataError, create_chart
 
 router = APIRouter(prefix="/assistant", tags=["Field companion"])
 _requests: OrderedDict[str, deque] = OrderedDict()
@@ -44,3 +45,12 @@ async def chat(payload: ChatRequest, request: Request):
         return await reply(payload)
     except AssistantError as exc:
         return JSONResponse(status_code=exc.status, content={"error": {"code": exc.code, "message": exc.message}})
+
+
+@router.post("/charts", response_model=ChartArtifact)
+def charts(payload: ChartBuildRequest):
+    """The manual chart builder uses the same deterministic implementation as the agent."""
+    try:
+        return create_chart(payload)
+    except ChartDataError as exc:
+        return JSONResponse(status_code=409, content={"error": {"code": "chart_data_unavailable", "message": str(exc)}})

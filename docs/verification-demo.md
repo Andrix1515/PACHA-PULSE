@@ -1,46 +1,33 @@
-# Verification record - 2026-11-14
+# Verification record - team rabbit and chart agent (2026-11-14)
 
-## Executed checks
+## Actual executed results
 
-| Check | Actual result |
+| Check | Result |
 | --- | --- |
-| Backend: `.venv/Scripts/python.exe -m pytest -q` from `backend` | 50 passed; latest execution 2.66 seconds |
-| Frontend: `npm run build` | Passed TypeScript checks and production Vite build |
-| Browser full run: `npm run test:e2e` with free test ports 5175/8002 | 26 passed, 4 deliberately skipped duplicate device-independent geometry cases; 1.7 minutes |
-| Focused follow-up: `node node_modules/@playwright/test/cli.js test --grep '320px|historical date'` | 4 passed across desktop and mobile; 27.6 seconds |
-| Live NASA script: `backend/scripts/verify_power_integration.py` | HTTP 200, first delivery live, second cache, 31 complete daily rows; no mock |
-| Vercel configuration rules | Passed published configuration rules with a Draft 7 validator; no cloud build or deployment executed |
-| Restarted local launcher and proxy | Project page HTTP 200, API health HTTP 200, assistant status HTTP 200, authentic saved example HTTP 200 |
-| Unconfigured assistant over the actual local proxy | Typed HTTP 503 `assistant_not_configured`; authored guide remains available |
+| `.venv/Scripts/python.exe -m pytest -q` from backend | 68 passed in 1.33 seconds |
+| Frontend `npm run build` | TypeScript and production Vite build passed |
+| Full Playwright run on free ports 5175/8002 | 42 passed, 4 intentionally skipped duplicate geometry cases, 50.2 seconds |
+| Automated axe WCAG 2 A/AA, 2.1 AA and 2.2 AA checks | Passed on tested current desktop/mobile views, including Charts and agent receipt |
+| Real restarted local proxy, port 5173 to API 8000 | Health/status HTTP 200; deterministic saved-source weekly chart HTTP 200, five groups totalling 60.64 mm |
+| Live Gemini | Not executed; actual status configured=false |
+| Cloud build/deployment | Not executed |
 
-The full browser run was followed by a focused check after adding the upstream-error/date test and making the 320px check exercise actual keyboard focus. Across these runs, all 28 distinct active browser/geometry cases in the current suite passed. Four pure geometry cases execute once on desktop and are intentionally skipped as duplicates in the mobile project. No claim is made that a root-font-size change alone verifies browser zoom or text resizing.
+## New behavior covered
 
-The published Vercel schema declares older draft metadata while using newer keywords in unused experimental trigger definitions. Strict schema meta-validation rejected that inconsistency. Evaluating the actual configuration against its published rules with the Draft 7 validator produced no errors. This is configuration validation, not proof of a successful Vercel cloud build.
+Polygon tests click/tap the first marker after three points, inspect the saved ring to verify three unique corners plus its required closing coordinate, and close with Enter. They also verify that a crossed ring fails without replacing saved data and that clicking the first point before three corners does not close or create a duplicate. Existing map tap, coordinate, geometry, import/export, persistence, undo and role tests remain in the passing suite. The first test run exposed immutable Leaflet marker title options and missing explicit key activation; both were fixed before the passing run.
 
-## User-story coverage
+Manual chart tests use the authentic saved Mantaro January 2025 source through the actual FastAPI chart endpoint. Daily temperature preserves the first 8.76 degree C observation. Weekly rainfall produces 22.95, 18.33, 8.83, 7.81 and 2.72 mm in consecutive groups (last group has three days), totalling 60.64 mm. Rotation counts are recomputed from sequences. Tests check typed missing-data errors, rejected arbitrary model values/unsupported options, missing-rain null groups, partial temperature means, accessible tables, CSV download, source-preserving snapshots after location changes and chart inclusion in report JSON.
 
-- English landing page and six-module navigation on desktop and Pixel 7 emulation.
-- Valid, blank, out-of-range and zero coordinates; unknown soil/water and profile-area validation.
-- Polygon drawing through coordinates, map taps and keyboard-center controls; crossing and duplicate rejection, concave reference point, approximate area, validated GeoJSON draft import/export, reload persistence, delete and undo.
-- Authentic saved NASA record and expanded Agronomist observation table; no invented source values.
-- Three backend rotation comparisons at 100% and 70%, preserved editor state and invalidated stale results, plus reports/export.
-- Synthetic Gemini browser reply showing that a profile stays unchanged until explicit confirmation, then updates the actual form.
-- Missing-key/error handling, unchanged field data after chat errors, local guided steps, keyboard Escape/focus return, paused animation and reduced-motion preference.
-- 320px page reflow and keyboard skip link, with no horizontal page scrolling in the checked views. Wide data tables scroll within their labelled regions.
-- Automated axe checks with WCAG 2 A/AA, 2.1 AA and 2.2 AA tags on landing, overview, field editor, climate table, comparison, reports, help and companion states. The active-navigation and small step-number contrast issues found during the first run were corrected.
+Agent tests use synthetic Gemini HTTP responses with authentic local data tools. They verify inspect -> create chart -> final response across three bounded turns, exact stateless step/signature continuation, private reasoning exclusion from UI, terminal typed response, allowlisted dispatch, unknown-tool rejection, step limits, no fake chart without evidence and retention of a valid chart when the final provider request fails. These tests do not establish a live Gemini connection.
 
-Gemini provider tests use explicitly synthetic HTTP responses. They cover missing keys, private status, correct Interactions headers/schema and disabled server conversation storage, invalid inputs/proposals, malformed replies, authentication/rate errors, timeout, server-resolved historical evidence, and recomputed scenario values. They do not prove real Google model access or eliminate natural-language hallucinations.
+Browser agent tests mock only the conversation envelope; the attached chart artifact is calculated by the real backend. They verify ready-chart receipts, completed tool labels, the team's rabbit skin and opening the created chart in Charts. Existing profile proposals still require explicit confirmation. Reduced-motion and pause behavior, keyboard focus/close, 320px reflow and field/profile preservation remain covered. CSV text cells are quoted and protected against spreadsheet formulas.
 
-## Observation evidence
+Current screenshots: `pacha-agent-rabbit-desktop.png`, `pacha-agent-rabbit-mobile.png`, `pacha-charts-desktop.png`, `pacha-charts-mobile.png`, plus refreshed landing, overview, field, climate and guide images under `docs/evidence`. Desktop agent skin and mobile Charts were visually inspected. Full-page captures can show sticky UI at the scroll position used by the test; this is not a fixed page-content position.
 
-`docs/evidence/power-integration.json` records the fresh live NASA request retrieved at 2026-11-14T21:53:51.145195+00:00: API v2.10.3, 31 complete days, January 2025 at -12.05/-75.2, mean temperature 9.41 degrees C and rainfall total 60.64 mm. The authentic saved raw file and its SHA-256 remain unchanged. Its source manifest's explanatory limitations were translated to English.
+## Scientific and execution boundaries
 
-Current screenshots use `pacha-landing-*`, `pacha-overview-*`, `pacha-field-*`, `pacha-climate-*` and `pacha-companion-*` under `docs/evidence`. Older differently named images describe previous interfaces. Desktop overview and mobile companion screenshots were also visually inspected.
+The authentic raw NASA record and its source hash are unchanged. No new NASA observations were invented or requested for these chart calculations. `power-integration.json` remains evidence of the earlier genuine live NASA request and cache check at 2026-11-14T21:53:51.145195+00:00; it was not rerun or relabelled as a new observation in this delivery.
 
-## External checks still required
+Only saved/cached verified climate evidence and user-input structural sequences are charted. Missing live cloud cache can require reloading climate or using the labelled saved source. No satellite polygon aggregation, weather forecast, soil health, crop suitability or profitability is inferred.
 
-No private Gemini key is configured, so a real Gemini answer remains unverified. The owner's key must be entered privately, the API restarted/redeployed, and a real answer plus confirmed entry tested.
-
-No Vercel deployment was created. Follow `VERCEL_DEPLOYMENT.md`, then verify both services, the real chat flow and public incognito access. Services is currently Beta and its cache is ephemeral. Manual screen-reader and farmer usability testing remains outside the automated check results.
-
-Local delivery is running at http://localhost:5174 (API 8001). Test-only processes were stopped by Playwright. The separate Project_Farm version was not edited or stopped.
+The existing Vercel configuration is unchanged. Previous published-schema checks are historical configuration evidence, not a cloud deployment. The owner must configure Gemini privately, push and redeploy, verify real tool calling and test public/incognito jury access.

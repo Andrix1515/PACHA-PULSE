@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { divIcon } from 'leaflet'
+import { divIcon, DomEvent } from 'leaflet'
 import type { Map as LeafletMap } from 'leaflet'
 import { CircleMarker, MapContainer, Marker, Polygon, Polyline, ScaleControl, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import type { Location, UserRole } from '../../types'
@@ -16,14 +16,15 @@ interface Props {
   role: UserRole
 }
 
-function MapInteraction({ location, boundary, drawing, onAdd, onSelect, onView }: Props & { drawing: boolean; onAdd: (vertex: Vertex) => void; onView: (center: Vertex, zoom: number) => void }) {
+function MapInteraction({ location, boundary, drawing, vertices, onClose, onAdd, onSelect, onView }: Props & { drawing: boolean; vertices: Vertex[]; onClose: () => void; onAdd: (vertex: Vertex) => void; onView: (center: Vertex, zoom: number) => void }) {
   const map = useMap()
   useEffect(() => { const observer = new ResizeObserver(() => map.invalidateSize({ animate: false })); observer.observe(map.getContainer()); return () => observer.disconnect() }, [map])
   useMapEvents({
     click(event) {
       const vertex = { lat: Number(event.latlng.lat.toFixed(7)), lon: Number((((event.latlng.lng + 180) % 360 + 360) % 360 - 180).toFixed(7)) }
       if (Math.abs(vertex.lat) > MAX_MAP_LAT) return
-      if (drawing) onAdd(vertex)
+      if (drawing && vertices.length >= 3 && map.latLngToContainerPoint([vertices[0].lat, vertices[0].lon]).distanceTo(event.containerPoint) <= 18) onClose()
+      else if (drawing) onAdd(vertex)
       else onSelect({ ...vertex, source: 'map' })
     },
     moveend() { const center = map.getCenter(); onView({ lat: center.lat, lon: center.lng }, map.getZoom()) },
@@ -81,8 +82,9 @@ export default function LocationMap(props: Props) {
   function add(vertex: Vertex) {
     try {
       validateVertex(vertex)
+      if (vertices.length >= 3 && vertex.lat === vertices[0].lat && vertex.lon === vertices[0].lon) { save(); return }
       if (vertices.length >= MAX_VERTICES) throw new Error('At most 100 points are supported.')
-      if (vertices.some((value) => value.lat === vertex.lat && value.lon === vertex.lon)) throw new Error('That point is already in the outline. It closes when you save.')
+      if (vertices.some((value) => value.lat === vertex.lat && value.lon === vertex.lon)) throw new Error('That point is already in the outline. Add at least three corners before closing at point 1.')
       setVertices((current) => [...current, vertex]); setDrawing(true); setError(''); setAnnouncement(`Point ${vertices.length + 1} added. The outline is still a draft.`)
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'The point could not be added.') }
   }
@@ -119,19 +121,20 @@ export default function LocationMap(props: Props) {
   const outside = boundary && location && !containsPoint(boundary, location)
   return <div className="parcel-map-editor">
     <div className="map-toolbar" role="group" aria-label="Map tools"><button type="button" aria-pressed={!drawing} onClick={() => { setDrawing(false); setAnnouncement('Query point mode. Your draft is preserved.') }}>Choose query point</button><button id="parcel-draw-toggle" type="button" aria-pressed={drawing} onClick={() => { setDrawing(true); setAnnouncement('Drawing mode. Add points with clicks, taps, coordinates or the map center.') }}>Draw or edit field</button><button type="button" onClick={() => { setVertices([]); setName(''); setDrawing(true); setError(''); setAnnouncement('New draft. The saved field stays unchanged until you confirm its replacement.') }}>New outline</button><button type="button" onClick={() => setExpanded(!expanded)} aria-pressed={expanded}>{expanded ? 'Reduce map' : 'Expand map'}</button></div>
-    <p className="map-instructions" id="map-help">{drawing ? 'Add boundary points in order. Move markers or edit their coordinates below. Close the outline using Save.' : 'Click or tap to choose a query point. To outline your field, select Draw or edit field.'} Use arrow keys and +/− on the map to navigate. Every action also has an external control.</p>
+    <p className="map-instructions" id="map-help">{drawing ? 'Add corners in order. After three points, click or tap point 1 to close and save. You can also press Enter on point 1 or use Close and save field below.' : 'Click or tap to choose a query point. To outline your field, select Draw or edit field.'} Use arrow keys and +/− on the map to navigate. Every action also has an external control.</p>
     <div className={`map-frame ${expanded ? 'map-expanded' : ''} ${drawing ? 'drawing-mode' : ''}`} role="region" aria-label="World map for selecting a location" aria-describedby="map-help" onKeyDown={(event) => { if (event.key === 'Escape' && drawing) { setDrawing(false); setAnnouncement('Drawing paused. Your draft is preserved.') } }}>
       <MapContainer ref={mapRef} center={[12, -12]} zoom={2} minZoom={2} maxZoom={19} zoomControl={false} scrollWheelZoom={false} worldCopyJump maxBounds={[[-MAX_MAP_LAT, -Infinity], [MAX_MAP_LAT, Infinity]]}>
         <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxNativeZoom={19} maxZoom={19} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' eventHandlers={{ tileerror: () => setTileError(true) }} />
         <ZoomControl position="topleft" zoomInTitle="Zoom in" zoomOutTitle="Zoom out" /><ScaleControl position="bottomleft" imperial={false} />
-        <MapInteraction {...props} drawing={drawing} onAdd={add} onView={(center, zoom) => setView({ ...center, zoom })} />
+        <MapInteraction {...props} drawing={drawing} vertices={vertices} onClose={save} onAdd={add} onView={(center, zoom) => setView({ ...center, zoom })} />
         {boundary && <Polygon positions={verticesOf(boundary).map((vertex) => [vertex.lat, vertex.lon])} pathOptions={{ color: '#244a38', fillColor: '#a9c681', fillOpacity: drawing ? .08 : .23, weight: 3 }} interactive={false} />}
         {drawing && vertices.length >= 2 && <Polyline positions={vertices.map((vertex) => [vertex.lat, vertex.lon])} pathOptions={{ color: '#a05223', weight: 3, dashArray: '6 5' }} interactive={false} />}
-        {drawing && vertices.map((vertex, index) => <Marker key={index} position={[vertex.lat, vertex.lon]} draggable keyboard title={`Point ${index + 1}: drag or edit coordinates below`} alt={`Point ${index + 1} in the draft`} icon={divIcon({ html: String(index + 1), className: 'parcel-vertex-icon', iconSize: [32, 32], iconAnchor: [16, 16] })} eventHandlers={{ dragend(event) { const point = event.target.getLatLng(); const next = { lat: Number(point.lat.toFixed(7)), lon: Number((((point.lng + 180) % 360 + 360) % 360 - 180).toFixed(7)) }; try { validateVertex(next); setVertices((current) => current.map((value, i) => i === index ? next : value)); setAnnouncement(`Point ${index + 1} moved. Save to confirm.`) } catch { setVertices((current) => [...current]); setError('Point outside the supported range.') } } }} />)}
+        {drawing && vertices.map((vertex, index) => <Marker key={`${index}-${index === 0 && vertices.length >= 3 ? 'close' : 'edit'}`} position={[vertex.lat, vertex.lon]} draggable keyboard bubblingMouseEvents={false} title={index === 0 && vertices.length >= 3 ? 'Close and save field at point 1' : `Point ${index + 1}: drag or edit coordinates below`} alt={`Point ${index + 1} in the draft`} icon={divIcon({ html: String(index + 1), className: `parcel-vertex-icon ${index === 0 && vertices.length >= 3 ? 'close-outline-point' : ''}`, iconSize: [32, 32], iconAnchor: [16, 16] })} eventHandlers={{ add(event) { event.target.getElement()?.setAttribute('aria-label', index === 0 && vertices.length >= 3 ? 'Close and save field at point 1' : `Point ${index + 1}: drag or edit coordinates below`) }, keydown(event) { if (index === 0 && ['Enter', ' '].includes(event.originalEvent.key)) { DomEvent.stop(event.originalEvent); if (vertices.length >= 3) save(); else setAnnouncement('Add at least three corners before closing the outline at point 1.') } }, click(event) { if (event.originalEvent) DomEvent.stopPropagation(event.originalEvent); if (index === 0) { if (vertices.length >= 3) save(); else setAnnouncement('Add at least three corners before closing the outline at point 1.') } }, dragend(event) { const point = event.target.getLatLng(); const next = { lat: Number(point.lat.toFixed(7)), lon: Number((((point.lng + 180) % 360 + 360) % 360 - 180).toFixed(7)) }; try { validateVertex(next); setVertices((current) => current.map((value, i) => i === index ? next : value)); setAnnouncement(`Point ${index + 1} moved. Save to confirm.`) } catch { setVertices((current) => [...current]); setError('Point outside the supported range.') } } }} />)}
       </MapContainer>
       <span className="map-center-crosshair" aria-hidden="true">+</span>
     </div>
     <div className="map-toolbar" role="group" aria-label="Map navigation and detail"><button type="button" onClick={() => mapRef.current?.setView([12, -12], 2, { animate: false })}>World view</button><button type="button" disabled={!location} onClick={() => location && mapRef.current?.setView([Math.max(-MAX_MAP_LAT, Math.min(MAX_MAP_LAT, location.lat)), location.lon], 16, { animate: false })}>Zoom to point</button><button type="button" disabled={!boundary && vertices.length < 2} onClick={() => { const points = drawing && vertices.length >= 2 ? vertices : verticesOf(boundary); if (points.length >= 2) mapRef.current?.fitBounds(points.map((vertex) => [vertex.lat, vertex.lon]), { padding: [35, 35], maxZoom: 18, animate: false }) }}>Fit field</button>{drawing && <button type="button" onClick={() => { const point = mapRef.current?.getCenter(); if (point) add({ lat: Number(point.lat.toFixed(7)), lon: Number(point.lng.toFixed(7)) }) }}>Add map center as a point</button>}</div>
+    {drawing && vertices.length >= 3 && <p className="close-outline-hint">Ready to close: click the green point 1, or focus it and press Enter. The same validation runs before saving.</p>}
     <p className="map-view-status" role="status">Center: {view.lat.toFixed(6)}°, {view.lon.toFixed(6)}° · Zoom {view.zoom} · WGS84</p>
     {tileError && <p className="field-error" role="status">Some map tiles could not load. You can still use coordinates and outline points.</p>}
     {location && Math.abs(location.lat) > MAX_MAP_LAT && <p className="field-error" role="status">Coordinates saved. This projection cannot display polar latitudes above ±85.05°.</p>}

@@ -1,6 +1,7 @@
 """Tests for location intelligence, geocoding, and data provider registry."""
 
 import asyncio
+from pathlib import Path
 from app.providers.location import LocationService, determine_hemisphere
 from app.providers.registry import registry, ProviderStatus
 from app.providers.senamhi import SENAMHIService
@@ -180,6 +181,23 @@ def test_gaez_suitability_evaluation():
     potato_suit = next((c for c in eval_andean.evaluated_crops if c.crop_id == "potato"), None)
     assert potato_suit is not None
     assert potato_suit.suitability_class == SuitabilityClass.VERY_SUITABLE
+
+
+def test_gaez_initialization_does_not_write_to_data_dir(tmp_path, monkeypatch):
+    data_dir = tmp_path / "gaez"
+
+    def reject_directory_creation(self, *args, **kwargs):
+        if self == data_dir:
+            raise OSError("read-only filesystem")
+        return original_mkdir(self, *args, **kwargs)
+
+    original_mkdir = Path.mkdir
+    monkeypatch.setattr(Path, "mkdir", reject_directory_creation)
+
+    service = GAEZService(data_dir=data_dir)
+
+    assert service.data_dir == data_dir
+    assert not data_dir.exists()
 
 
 def test_faostat_national_statistics():

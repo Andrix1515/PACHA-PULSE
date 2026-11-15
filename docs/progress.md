@@ -109,3 +109,9 @@
 ### 6. Executed Validation
 - **Backend**: 91 pytest unit and integration tests passing cleanly in 3.95 seconds.
 - **Frontend**: `tsc --noEmit && vite build` built cleanly in 1.47 seconds with 0 TypeScript errors.
+
+## Vercel read-only filesystem startup fix - 2026-11-15
+
+- Removed the directory-creation side effect from `GAEZService` initialization. The provider registry is created while importing the FastAPI app, and Vercel does not permit writes to `/var/task`.
+- Added a regression test that rejects creation of the configured GAEZ data directory during provider initialization.
+- Validation: the targeted GAEZ regression and suitability tests passed (2 passed); importing `app.main` with the project virtual environment succeeded. `git diff --check` reported no whitespace errors.

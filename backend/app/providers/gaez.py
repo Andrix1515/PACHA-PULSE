@@ -129,7 +129,6 @@ class GAEZService(BaseProvider):
             )
         )
         self.data_dir = data_dir or (Path(__file__).resolve().parents[2] / "data" / "gaez")
-        self.data_dir.mkdir(parents=True, exist_ok=True)
 
     def evaluate_location(
         self,

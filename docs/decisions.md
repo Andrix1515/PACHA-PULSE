@@ -16,3 +16,4 @@ Earlier Spanish documents were backed up in the ignored `.local/before-english` 
 
 10. Close a polygon naturally at the first vertex after at least three corners. Marker click/tap and Enter/Space share the existing validator, never append a duplicate closure node, and leave invalid drafts editable. Preserve the explicit button and coordinate alternatives.
 11. Add a manual Charts workspace that works without AI. The model selects a supported chart configuration; the server computes all plotted values and provenance. Keep at most six labelled snapshots in session memory, separate from changing current-field state, and export them with reports.
+12. Provider registration runs during FastAPI import on Vercel, where the deployed code directory is read-only. GAEZ initialization only records the optional raster directory and must not create it; optional deployment-time files belong in the bundle, and runtime temporary files belong under `/tmp`.

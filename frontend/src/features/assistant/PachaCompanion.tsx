@@ -79,7 +79,7 @@ export default function PachaCompanion({ embedded = false, motionPaused, onMotio
         <div className="quick-questions">
           <button disabled={pending} onClick={() => void send('Analyze my land conditions, coordinates and SoilGrids soil properties.')}>Analyze my land</button>
           <button disabled={pending} onClick={() => void send('Which crops could suit this location based on GAEZ and climate?')}>Suitable crops</button>
-          <button disabled={pending} onClick={() => void send('¿Cuáles cultivos son adecuados para este lugar y qué riesgos tiene mi rotación?')}>Evaluar en español</button>
+          <button disabled={pending} onClick={() => void send('Explain the available MODIS satellite history for my selected field in simple terms. Use stored evidence and tell me what is missing.')}>Explain satellite greenness</button>
           <button disabled={pending} onClick={() => void send('Simulate a 15% rainfall reduction and evaluate the sensitivity impact.')}>Simulate -15% rain</button>
           <button disabled={pending} onClick={() => void send('Please create a readable chart from my available data. Use rainfall if observations are loaded, or rotation structure if a comparison is available. Explain any missing data.')}>Make a chart</button>
         </div>

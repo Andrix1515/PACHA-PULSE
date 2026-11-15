@@ -1,0 +1,25 @@
+{
+  "source": "NASA POWER daily point API",
+  "status": "observed",
+  "normalization": "Saved daily values normalized by app/clients/power.py. Not an original raw NASA response.",
+  "point": [
+    -12.05,
+    -75.2
+  ],
+  "period": [
+    "2023-01-01",
+    "2025-12-31"
+  ],
+  "row_count": 1096,
+  "sha256": "20eed5b052de81ea61f2387ca0c1299c4810a92c9c83197b62c03b109ea4bf15",
+  "request_urls": [
+    "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M%2CT2M_MIN%2CT2M_MAX%2CPRECTOTCORR&community=AG&latitude=-12.05&longitude=-75.2&start=20230101&end=20240101&format=JSON&time-standard=UTC",
+    "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M%2CT2M_MIN%2CT2M_MAX%2CPRECTOTCORR&community=AG&latitude=-12.05&longitude=-75.2&start=20240102&end=20250101&format=JSON&time-standard=UTC",
+    "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M%2CT2M_MIN%2CT2M_MAX%2CPRECTOTCORR&community=AG&latitude=-12.05&longitude=-75.2&start=20250102&end=20251231&format=JSON&time-standard=UTC"
+  ],
+  "retrieved_at": [
+    "2026-11-15T18:19:25.473351+00:00",
+    "2026-11-15T18:19:26.880585+00:00",
+    "2026-11-15T18:19:28.482583+00:00"
+  ]
+}

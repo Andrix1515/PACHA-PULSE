@@ -97,3 +97,8 @@ The public `/` route now starts role selection, followed by a full-screen map, f
 Place search is a backend route, so deploy the frontend and updated API together. It uses the public Photon demo by default and needs no key. `PHOTON_SEARCH_URL` may select an operator-controlled HTTPS-compatible endpoint. Searches are explicit, bounded and cached per process; for many cloud instances, use an appropriate provider/shared limiter. Check a real country search and source attribution after deployment. Manual map coordinates remain a fallback.
 
 The field's 3D view is lazy and illustrative, with SVG fallback. Self-hosted font files must remain under `frontend/public/fonts` alongside their license. No new terrain or crop-growth service is configured. A successful 3D display is not evidence of soil/growth measurements. No deployment was run as part of this local change.
+
+
+## Offline observation worker and model artifacts
+
+The new local updater is a separate process, not a Vercel request task. Do not run the Windows polling launcher inside a serverless function. Production synchronization needs a separately supervised worker and durable shared observation/queue storage; ephemeral /tmp is not an ingestion database. The current local model artifacts are ignored under backend/models. Build and verify an explicit artifact distribution/storage workflow before claiming current forecasts on the deployed URL. If an artifact or series is absent, the API returns an unavailable state. The authentic MODIS archive is bundled under backend/data/demo; it can demonstrate historical vegetation independently of a current ML model. See MODIS_ML_IMPLEMENTATION.md. No deployment was performed in this task.

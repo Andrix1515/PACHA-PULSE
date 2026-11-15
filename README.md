@@ -6,6 +6,10 @@ A guided field journey for growers and agronomists: a searchable full-screen pol
 
 `integracion-visuales` combines remote main at `dd63dfa` with TetoFan at `12e640d`. It retains the guided visual experience and main's unchanged soil/terrain providers. **Check soil & terrain** queries one source at a time; **Explore crops** uses main's 21-crop catalogue, screening and comparison APIs. Rotation scenarios retain temperature, campaign month and hemisphere inputs. See [integration report](docs/MAIN_INTEGRATION.md). Nothing was pushed or deployed.
 
+## Satellite history and offline adaptive models
+
+Open **Understand the weather -> Satellite greenness** to read authentic MODIS observations, QA and a validated-model outlook when available. The Mantaro 2023?2025 archive has 69 composites. Models are experimental and exact-point only. **Sync NASA & update model** queues work for the separate offline worker; DEMO.cmd starts that worker and STOP_DEMO.cmd stops it with this folder's servers. Budget calculations use your own local harvest/cost/price assumptions. Grower screens show fewer items and larger text; technical evidence remains available to agronomists. See [implementation, commands and limits](docs/MODIS_ML_IMPLEMENTATION.md).
+
 ## Run locally on Windows
 
 Requirements: Python 3.12 and Node.js 22.12 or later (Node 24 LTS is suitable).
@@ -45,9 +49,9 @@ Follow [the complete Vercel guide](docs/VERCEL_DEPLOYMENT.md). Root `vercel.json
 
 ## Scientific limits
 
-NASA POWER is the only integrated NASA product. The saved Mantaro record is authentic, includes a source manifest and raw SHA-256, and contains 31 daily observations for January 2025. Rainfall total: 60.64 mm; mean temperature: 9.41 degrees C. These summaries describe a historical grid point, not a parcel sensor or a forecast.
+NASA POWER and MODIS MOD13Q1 are integrated; MODIS QA and pilot ML limits are described in docs/MODIS_ML_IMPLEMENTATION.md. The saved Mantaro record is authentic, includes a source manifest and raw SHA-256, and contains 31 daily observations for January 2025. Rainfall total: 60.64 mm; mean temperature: 9.41 degrees C. These summaries describe a historical grid point, not a parcel sensor or a forecast.
 
-Rotation results retain structural counts and now include main's rule-based agronomic/calendar review. Rainfall scenarios multiply the historical total. Crop screening uses preliminary catalogue/context heuristics; no validated field suitability probability, yield, soil health, disease diagnosis, irrigation requirement or economic forecast is calculated. MODIS integration and its validation remain pending. The illustrated landscape from the supplied design is decorative. The 3D field is flat, normalised and not to scale; plant geometry, spacing and stages are illustrations, not terrain data, yield or growth modelling. Crop-reference groups compare complete historical temperature data with published general bands; they do not determine regional suitability.
+Rotation results retain structural counts and now include main's rule-based agronomic/calendar review. Rainfall scenarios multiply the historical total. Crop screening uses preliminary catalogue/context heuristics; no validated field suitability probability, yield, soil health, disease diagnosis, irrigation requirement or economic forecast is calculated. Wider regional/operational MODIS model validation remains pending. The illustrated landscape from the supplied design is decorative. The 3D field is flat, normalised and not to scale; plant geometry, spacing and stages are illustrations, not terrain data, yield or growth modelling. Crop-reference groups compare complete historical temperature data with published general bands; they do not determine regional suitability.
 
 The saved polygon persists in this browser. Profile, selected query point, role, last step and motion/guide preferences use validated sessionStorage and survive reload in the same tab. Chat, climate results, comparisons and up to six chart snapshots stay in page memory and clear on reload. No automatic NASA or Gemini request runs when restoring progress. Chart sources and periods remain fixed when the current field changes, and chart snapshots are included in report exports. Export report JSON and field GeoJSON to keep a separate copy. Vercel's SQLite cache is temporary, not a persistent database.
 

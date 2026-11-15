@@ -1,3 +1,5 @@
+> Historical handoff. The current MODIS/ML and clarity implementation supersedes capability-absence statements below. Read MODIS_ML_IMPLEMENTATION.md and progress.md first.
+
 # Pacha Pulse: development handoff
 
 Prepared on 2026-11-15 at the user's explicit request to transfer the task to another AI.

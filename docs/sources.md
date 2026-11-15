@@ -1,3 +1,7 @@
+## Real MODIS source integration - 2026-11-15
+
+NASA ORNL DAAC's MOD13Q1 subset service is now integrated, in addition to POWER: https://modis.ornl.gov/data/modis_webservice.html and https://doi.org/10.5067/MODIS/MOD13Q1.061. The 2023?2025 Mantaro raw-value archive contains 69 composites (59 usable NDVI readings), exact request URLs, retrieval times and SHA-256; normalized POWER input rows have a separate clearly labelled hash/source manifest. Nominal pixel size is 250 m, not small-parcel precision. Latest live retrieval/training evidence is under evidence/modis-ml-live-verification.json and evidence/modis-worker-roundtrip.json. Historical records below claiming only POWER is integrated are superseded for this checkout. See MODIS_ML_IMPLEMENTATION.md for method, limitations and primary references.
+
 # Sources
 
 ## Integrated data and cartography

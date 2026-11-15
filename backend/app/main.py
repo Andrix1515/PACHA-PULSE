@@ -15,6 +15,8 @@ from app.api.routes.location import router as location_router
 from app.api.routes.crops import router as crops_router
 from app.api.routes.places import router as places_router
 
+from app.api.routes.earth import router as earth_router
+
 app = FastAPI(
     title="Pacha Pulse API",
     version="0.2.0",
@@ -27,6 +29,7 @@ app.include_router(assistant_router, prefix="/api/v1")
 app.include_router(location_router, prefix="/api/v1")
 app.include_router(crops_router, prefix="/api/v1")
 app.include_router(places_router, prefix="/api/v1")
+app.include_router(earth_router, prefix="/api/v1")
 
 
 @app.exception_handler(HTTPException)

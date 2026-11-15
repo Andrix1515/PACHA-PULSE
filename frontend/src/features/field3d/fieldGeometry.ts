@@ -36,33 +36,34 @@ export interface ParcelSectorInfo {
 /** Splits the normalized parcel footprint into 4 interactive agricultural zones (NW, NE, SW, SE) with proportional area in hectares. */
 export function computeParcelSectors(ring: [number, number][], totalAreaHa: number): { points: [number, number][]; pointSectors: number[]; sectors: ParcelSectorInfo[] } {
   const points = plantingPoints(ring)
-  if (!points.length) {
-    return {
-      points,
-      pointSectors: [],
-      sectors: [0, 1, 2, 3].map((id) => ({
-        id,
-        code: ['NW', 'NE', 'SW', 'SE'][id],
-        label: ['Zone 1 · NW', 'Zone 2 · NE', 'Zone 3 · SW', 'Zone 4 · SE'][id],
-        pointIndices: [],
-        center: [id % 2 === 0 ? -1.5 : 1.5, id < 2 ? -1.5 : 1.5],
-        areaShare: 0.25,
-        areaHa: +(totalAreaHa * 0.25).toFixed(4),
-      })),
-    }
+  // Polygon integrals, independent of the decorative planting grid.
+  const signedDoubleArea = (polygon: [number, number][]) => polygon.reduce((sum, [x,z], i) => { const next=polygon[(i+1)%polygon.length]; return sum+x*next[1]-next[0]*z },0)
+  const doubleArea=signedDoubleArea(ring)
+  const cx=ring.reduce((sum,[x,z],i)=>{const next=ring[(i+1)%ring.length];return sum+(x+next[0])*(x*next[1]-next[0]*z)},0)/(3*doubleArea)
+  const cz=ring.reduce((sum,[x,z],i)=>{const next=ring[(i+1)%ring.length];return sum+(z+next[1])*(x*next[1]-next[0]*z)},0)/(3*doubleArea)
+  function clip(polygon:[number,number][],axis:0|1,bound:number,upper:boolean):[number,number][] {
+    const output:[number,number][]=[]
+    polygon.forEach((point,i)=>{
+      const previous=polygon[(i+polygon.length-1)%polygon.length]
+      const inside=(p:[number,number])=>upper?p[axis]>=bound:p[axis]<=bound
+      if(inside(point)!==inside(previous)) {
+        const t=(bound-previous[axis])/(point[axis]-previous[axis])
+        output.push([previous[0]+t*(point[0]-previous[0]),previous[1]+t*(point[1]-previous[1])])
+      }
+      if(inside(point))output.push(point)
+    })
+    return output
   }
-  const cx = points.reduce((sum, [x]) => sum + x, 0) / points.length
-  const cz = points.reduce((sum, [, z]) => sum + z, 0) / points.length
   const buckets: number[][] = [[], [], [], []]
   const pointSectors = points.map(([x, z], idx) => {
     const sector = (z >= cz ? 2 : 0) + (x >= cx ? 1 : 0)
     buckets[sector].push(idx)
     return sector
   })
-  const total = points.length
   const sectors: ParcelSectorInfo[] = [0, 1, 2, 3].map((id) => {
     const indices = buckets[id]
-    const share = total > 0 ? indices.length / total : 0.25
+    const fragment=clip(clip(ring,0,cx,id%2===1),1,cz,id>=2)
+    const share=Math.abs(signedDoubleArea(fragment)/doubleArea)
     const sx = indices.length ? indices.reduce((sum, idx) => sum + points[idx][0], 0) / indices.length : cx + (id % 2 === 0 ? -1.5 : 1.5)
     const sz = indices.length ? indices.reduce((sum, idx) => sum + points[idx][1], 0) / indices.length : cz + (id < 2 ? -1.5 : 1.5)
     return {
@@ -72,7 +73,7 @@ export function computeParcelSectors(ring: [number, number][], totalAreaHa: numb
       pointIndices: indices,
       center: [sx, sz],
       areaShare: share,
-      areaHa: +(totalAreaHa * share).toFixed(4),
+      areaHa: totalAreaHa * share,
     }
   })
   return { points, pointSectors, sectors }

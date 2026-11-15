@@ -1,3 +1,11 @@
+## MODIS, offline ML and clarity implementation - 2026-11-15
+
+Added real MOD13Q1 QA-filtered history, hashed 69-composite pilot archive and 1,096 normalized historical POWER days. Live incremental history now holds 88 MODIS composites and 1,413 weather days. Repeated ingestion inserted zero duplicates. Offline temporal experiments beat persistence at this exact point; the latest held-out RMSE is 0.037166 vs 0.050059, with negative R2 (-0.290725) explicitly retained as a limitation. HTTP queues update requests; the owned local worker completed an actual browser-triggered update and returned a dated experimental outlook. Added descriptive monitoring, typed unavailable model states, read-only Pacha tools and user-input budget scenarios.
+
+Simplified grower crop browsing, larger text, flowing 3D controls, role-aware satellite lessons and removed the unstable simulation render loop. Zone hectares now depend on geometric clipping rather than illustrative plants. Backend: 128 tests passed. Full browser run: 69 passed/7 duplicate skips; post-refinement targeted run: 26 passed/4 duplicate skips. Production build passed with its existing size advisory. No push, commit or deployment. Detailed status, commands, evidence and production boundaries: MODIS_ML_IMPLEMENTATION.md.
+
+Earlier records below are historical; statements that MODIS is absent no longer describe this local checkout.
+
 # Current local update - 2026-11-15: 3D Parcel Simulator, Animated Cloud Bubble, Role Modes & Brand Logo
 
 ## Implemented locally

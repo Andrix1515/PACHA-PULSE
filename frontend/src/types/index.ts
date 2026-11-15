@@ -2,6 +2,7 @@ export type WorkspaceView = 'monitoring' | 'planning'
 export type AppView = 'overview' | 'parcel' | 'crops' | 'monitoring' | 'planning' | 'charts' | 'reports' | 'help'
 export interface ClimateReference { lat: number; lon: number; start: string; end: string; saved_example: boolean }
 export interface ComparisonInput {
+  economic_inputs?: EconomicInputs
   rotations: Rotation[]
   rainfall_percent: number
   temperature_delta_c?: number
@@ -264,6 +265,9 @@ export interface SequenceCalendarStep {
 }
 
 export interface SequenceAgronomicAssessment {
+  pesticide_dependency_reduction?: 'high' | 'moderate' | 'low'
+  ipm_reduction_limitations?: string
+  synthetic_fertilizer_offset_kg_n_ha?: null
   family_repetition_count: number
   solanaceae_repetition: boolean
   poaceae_repetition: boolean
@@ -322,3 +326,14 @@ export interface TerrainInfo {
   provenance: Provenance
   warnings: string[]
 }
+
+
+export interface VegetationResponse {
+ lat:number;lon:number;start:string;end:string;source:string;product_version:string;status:'observed'|'unavailable';delivery:string;spatial_resolution:string;retrieved_at:string|null;quality:string;limitations:string[];
+ data:{date:string;period_end:string;ndvi:number|null;evi:number|null;pixel_reliability:number|null;quality:string;retrieved_at:string;request_url:string}[];
+ summary:{ndvi_mean:number|null;ndvi_min:number|null;ndvi_max:number|null;valid_composites_count:number;cloudy_composites_count:number}
+}
+export interface MonitoringAnalysisResponse {status:string;metrics:Record<string,{value:number|null;unit:string;source:string}>;coverage:{expected_weather_days:number;available_weather_days:number;complete_weather_days:number};limitations:string[]}
+export interface NdviPredictionResponse {lat?:number;lon?:number;status:string;reason?:string;target_date?:string;predicted_ndvi?:{value:number;forecast_horizon:string;model_version:string};update_state?:string|null;ingestion_sync?:unknown;adaptive_ml?:unknown;model_metadata?:unknown;limitations:string[]}
+
+export interface EconomicInputs {area_ha:number;cost_per_ha:number;expected_yield_t_ha:number;price_per_ton:number;currency:string;verified_n_credit_kg_ha?:number;price_per_kg_n?:number}

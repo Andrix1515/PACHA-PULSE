@@ -100,6 +100,8 @@ test('main catalogue, crop comparison and scenario API work through our guided v
   await expect(page.getByRole('combobox',{name:'Explore one crop',exact:true}).locator('option')).toHaveCount(crops.length)
   await page.getByRole('button',{name:'Check crop options for my point',exact:true}).click()
   await expect(page.locator('.candidate-assessment')).toContainText('More evidence needed')
+  await expect(page.locator('.candidate-option-card')).toHaveCount(4)
+  await page.getByRole('button',{name:`Show all ${crops.length} crops`,exact:true}).click()
   await expect(page.locator('.candidate-option-card')).toHaveCount(crops.length)
   await expect(page.locator('.candidate-option-card').filter({ hasText: 'Maize' })).toContainText('Heuristic screening index: 0/100')
   expect(screening!.searchParams.get('lat')).toBe('-12.05')

@@ -1,3 +1,7 @@
+## MODIS/ML implementation decisions - 2026-11-15
+
+Follow FINAL_PRODUCTION_SPEC_MODIS_ML_INGESTION locally, with explicit scientific corrections: HTTP triggers enqueue work rather than training; crop family/cover implies only an IPM review opportunity, not measured pesticide reduction; generic fixation does not imply purchased nitrogen savings. Use exact query-point model coverage, QA-preserving nulls, full historical weather features, chronological target purging, persistence gating and non-executable hashed JSON artifacts. Growers receive a small number of crop cards and a focused satellite lesson; agronomists retain complete observations and validation. Fix simulation identity memoization and calculate geometric quadrant areas independently of decorative plants. See MODIS_ML_IMPLEMENTATION.md.
+
 # Decisions
 
 ## 3D parcel simulator, cloud bubble, and role-differentiated UX - 2026-11-15

@@ -1,3 +1,7 @@
+## Current implementation boundaries - 2026-11-15
+
+MODIS is now a genuinely integrated second NASA product; earlier absence statements below are historical. Local offline ML is an experimental exact-point forecast, not a production-certified regional model. The latest test R2 is negative despite improvement over persistence. Missing QA, weather gaps, stale origins and absent model artifacts produce explicit unavailable states. Publication latency shortens the remaining time to a composite target. NDVI cannot establish yield, soil health, water stress cause or pests. No measured pesticide reduction or automatic fertilizer savings is claimed. The local SQLite queue/worker does not constitute durable multi-instance Vercel infrastructure; supervised workers, persistent storage, operational recovery, access/rate controls and wider scientific validation remain production work. See MODIS_ML_IMPLEMENTATION.md for the current complete record.
+
 # Known limitations
 
 - NASA POWER remains the only independently verified NASA observation product; SoilGrids and a terrain service are also integrated. The original challenge goal of two verified NASA products is not yet met; MODIS MOD13Q1 remains pending.

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Clock, Expand, Grid, RotateCcw, Sparkles, Sprout, Thermometer, ZoomIn, ZoomOut } from 'lucide-react'
-import type { AgriculturalProfile, ClimateResponse, Rotation, SoilProfile, TerrainInfo, UserRole } from '../../types'
+import type { AgriculturalProfile, ClimateResponse, Rotation, SoilProfile, TerrainInfo, UserRole, VegetationResponse, NdviPredictionResponse } from '../../types'
 import type { ParcelBoundary } from '../parcel/geometry'
 import { computeParcelSectors, fieldFootprint } from './fieldGeometry'
 import type { CameraCommand } from './fieldRenderer'
 import { getCropSimSpec, MONTHS, SHORT_MONTHS, simulateParcelCrop } from './fieldSimulation'
+import LocalBudget from './LocalBudget'
 import type { ParcelSimulationSummary } from './fieldSimulation'
 
 const stages = ['Sowing', 'Sprouting', 'Growing', 'Flowering', 'Harvest']
@@ -39,6 +40,8 @@ export interface AppliedFieldSimulation {
 }
 
 type Props = {
+  prediction?: NdviPredictionResponse | null
+  vegetation?: VegetationResponse | null
   boundary: ParcelBoundary
   profile: AgriculturalProfile
   climate: ClimateResponse | null
@@ -56,6 +59,8 @@ type Props = {
 }
 
 export default function FieldExplorer({
+  vegetation,
+  prediction,
   boundary,
   profile,
   climate,
@@ -92,7 +97,7 @@ export default function FieldExplorer({
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const labels = { ...names, ...cropLabels }
+  const labels = useMemo(() => ({ ...names, ...cropLabels }), [cropLabels])
   const crop = rotations?.[sequence]?.crops[campaign] ?? previewCrop
   const spec = getCropSimSpec(crop, labels[crop])
   const [customDays, setCustomDays] = useState<Record<string, number>>({})
@@ -102,7 +107,7 @@ export default function FieldExplorer({
   const totalAreaHa = boundary.properties.area.value
   const sectorData = useMemo(() => computeParcelSectors(ring, totalAreaHa), [ring, totalAreaHa])
 
-  const activeZoneCount = activeZones.filter(Boolean).length
+  const activeZoneCount = activeZones.filter((active,index) => active && sectorData.sectors[index].areaHa > 0).length
   const allocatedAreaHa = useMemo(() => {
     const sum = sectorData.sectors.reduce((acc, sec, idx) => (activeZones[idx] ? acc + sec.areaHa : acc), 0)
     return +sum.toFixed(4)
@@ -317,6 +322,10 @@ export default function FieldExplorer({
           <p>No crop demand, soil change or yield simulation is performed.</p>
         </details>
 
+        {vegetation && <details className="canopy-reading"><summary>Satellite context for this point</summary><p>Latest usable NDVI: {vegetation.data.filter(row => row.ndvi !== null).at(-1)?.ndvi ?? 'Unavailable'} ? historical, not the illustrated crop stage.</p><p>{vegetation.source} ? {vegetation.spatial_resolution}</p></details>}
+        <details><summary>Preventive crop planning</summary><p>Vary botanical families and review soil cover with your agronomist. These practices may support integrated pest management; no pesticide reduction or fertilizer saving is measured here.</p></details>
+        {prediction && <details><summary>Experimental satellite outlook</summary><p>{prediction.status === 'predicted' ? `${prediction.predicted_ndvi?.value.toFixed(2)} NDVI for ${prediction.target_date}. Satellite pixel context, not a prediction of these illustrated plants.` : prediction.reason || 'No validated outlook available.'}</p></details>}
+        <LocalBudget area={allocatedAreaHa} />
         <details className="explorer-sim-details" open={isDesktop || undefined}>
           <summary>
             <Grid size={15} />
@@ -345,6 +354,7 @@ export default function FieldExplorer({
                   type="button"
                   key={sec.id}
                   className="sim-zone-btn"
+                  disabled={sec.areaHa <= 0}
                   aria-pressed={activeZones[idx]}
                   onClick={() => toggleZone(idx)}
                 >

@@ -1,3 +1,7 @@
+## MODIS and temporal NDVI experiment - 2026-11-15
+
+Raw MOD13Q1 point subsets are scaled by 0.0001; QA 0/1 retained, cloud/snow/fill invalid values remain missing. A composite becomes available to the feature builder at its nominal window end (start+15d); lags and 16/32-day complete historical POWER windows precede that origin. Training targets are the next exact 16-day composite window, with no bridge across QA gaps or annual cadence resets. Chronological 70/15/15 splits purge targets reaching the following prediction partition. Candidate selection uses validation RMSE; promotion requires test RMSE below persistence. Point-specific experiments are not regional validation. The latest real test has RMSE 0.037166 vs 0.050059 persistence, R2 -0.290725; do not hide the weak absolute fit. Publication latency reduces actual remaining lead time. Test RMSE is not calibrated uncertainty. Budget arithmetic uses user-entered yield/cost/price, never NDVI-derived yield or inferred fertilizer savings. Zone shares use polygon clipping and area integrals scaled to approximate spherical outline hectares. See MODIS_ML_IMPLEMENTATION.md.
+
 # Methods and evidence
 
 ## Historical climate

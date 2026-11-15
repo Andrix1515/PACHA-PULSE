@@ -1,4 +1,14 @@
 import { test, expect } from '@playwright/test'
+import { computeParcelSectors } from '../src/features/field3d/fieldGeometry'
+
+test('subplot hectares come from polygon geometry even with no decorative plant points', () => {
+  const result=computeParcelSectors([[0,0],[.1,0],[.1,.01],[0,.01]],8)
+  expect(result.points).toHaveLength(0)
+  result.sectors.forEach(sector=>expect(sector.areaHa).toBeCloseTo(2,9))
+  expect(result.sectors.reduce((sum,sector)=>sum+sector.areaHa,0)).toBeCloseTo(8,9)
+  const reversed=computeParcelSectors([[0,.01],[.1,.01],[.1,0],[0,0]],8)
+  reversed.sectors.forEach((sector,index)=>expect(sector.areaHa).toBeCloseTo(result.sectors[index].areaHa,9))
+})
 import { createBoundary } from '../src/features/parcel/geometry'
 import { fieldFootprint, inFootprint, plantingPoints } from '../src/features/field3d/fieldGeometry'
 import { cropReferences, referenceCheck } from '../src/features/crops/references'

@@ -1,0 +1,216 @@
+{
+  "verified_at": "2026-11-15T18:33:08.251Z",
+  "path": "Browser -> Vite -> FastAPI -> SQLite job queue -> owned offline worker -> NASA update checks -> temporal training -> model registry -> API",
+  "historical_composites": 69,
+  "history_quality": {
+    "ndvi_mean": 0.20105254237288137,
+    "ndvi_min": 0.1196,
+    "ndvi_max": 0.3798,
+    "valid_composites_count": 59,
+    "cloudy_composites_count": 10
+  },
+  "update_job_id": 1,
+  "initial_update_state": "queued_for_offline_worker",
+  "completed_job": {
+    "id": 1,
+    "status": "complete",
+    "error": null,
+    "requested_at": "2026-11-15T18:32:47.944746+00:00"
+  },
+  "prediction": {
+    "status": "predicted",
+    "predicted_ndvi": {
+      "value": 0.2193,
+      "unit": "NDVI ratio",
+      "status": "predicted",
+      "source": "Local temporally validated scikit-learn experiment",
+      "observed_at": "2026-10-31",
+      "retrieved_at": "2026-11-15T18:33:07.293192+00:00",
+      "spatial_resolution": "Nominal 250 m",
+      "quality": "experimental",
+      "forecast_horizon": "16_days",
+      "forecast_origin": "2026-10-31",
+      "model_version": "pacha-ndvi-forest-0db32a6a8cb5",
+      "limitations": [
+        "MODIS pixel size is nominally 250 m x 250 m (~6.25 ha); smaller parcels share reflectance with surrounding land.",
+        "16-day composites are historical canopy greenness, not yield, soil health or a pest diagnosis.",
+        "Composite start dates are not instantaneous acquisitions; a composite is only usable after its observation window ends.",
+        "Marginal QA is retained and labelled; snow, cloud, fill and invalid values remain missing.",
+        "The +/- test RMSE band is an error reference, not a calibrated confidence interval. Repeated adaptive holdouts are not independent field validation."
+      ]
+    },
+    "current_ndvi": {
+      "value": 0.1665,
+      "date": "2026-10-16"
+    },
+    "target_date": "2026-11-16",
+    "days_until_target": 1,
+    "uncertainty_band": [
+      0.18213128258037406,
+      0.2564624604751815
+    ],
+    "expected_delta": 0.0528,
+    "interpretation": "greenness_increasing",
+    "model_metadata": {
+      "status": "promoted",
+      "model_version": "pacha-ndvi-forest-0db32a6a8cb5",
+      "trained_at": "2026-11-15T18:33:06.387613+00:00",
+      "n_samples": 53,
+      "training_window_start": "2023-04-22",
+      "training_window_end": "2025-09-13",
+      "validation_window": [
+        "2025-09-29",
+        "2026-06-09"
+      ],
+      "test_window": [
+        "2026-06-25",
+        "2026-10-31"
+      ],
+      "metrics": {
+        "mae": 0.0303572163809179,
+        "rmse": 0.03716558894740373,
+        "r2": -0.2907245725033982,
+        "baseline_mae": 0.041425,
+        "baseline_rmse": 0.05005859067133233,
+        "skill_score": 0.25755822429320196
+      },
+      "validation_rmse": {
+        "ridge": 0.0404909919510281,
+        "forest": 0.031387147609378635
+      },
+      "validated_cells": [
+        "-12.05000000:-75.20000000"
+      ],
+      "feature_names": [
+        "ndvi_t",
+        "ndvi_lag1",
+        "ndvi_lag2",
+        "ndvi_delta",
+        "evi_t",
+        "rain_sum_16d",
+        "rain_sum_32d",
+        "t2m_mean_16d",
+        "t2m_min_abs_16d",
+        "t2m_max_mean_16d",
+        "thermal_range_16d",
+        "sin_doy",
+        "cos_doy"
+      ],
+      "feature_importances": {
+        "ndvi_t": 0.03551213722877469,
+        "ndvi_lag1": 0.02645456585712446,
+        "ndvi_lag2": 0.09068021169181857,
+        "ndvi_delta": 0.045291292481691114,
+        "evi_t": 0.0537912081857557,
+        "rain_sum_16d": 0.1260145205637677,
+        "rain_sum_32d": 0.14521806494224268,
+        "t2m_mean_16d": 0.04811951006229445,
+        "t2m_min_abs_16d": 0.17470873591099303,
+        "t2m_max_mean_16d": 0.01729059702744729,
+        "thermal_range_16d": 0.051513479223647005,
+        "sin_doy": 0.16051788873304634,
+        "cos_doy": 0.024887788091396936
+      },
+      "reason": "Chronological holdout experiment at this query point; not regional validation.",
+      "artifact": "pacha-ndvi-forest-0db32a6a8cb5.json",
+      "artifact_sha256": "9bf54ff67d3c2d3a1c20f46b1a0e126d197619e380845081ee28e910ef921ee6"
+    },
+    "limitations": [
+      "MODIS pixel size is nominally 250 m x 250 m (~6.25 ha); smaller parcels share reflectance with surrounding land.",
+      "16-day composites are historical canopy greenness, not yield, soil health or a pest diagnosis.",
+      "Composite start dates are not instantaneous acquisitions; a composite is only usable after its observation window ends.",
+      "Marginal QA is retained and labelled; snow, cloud, fill and invalid values remain missing.",
+      "The +/- test RMSE band is an error reference, not a calibrated confidence interval. Repeated adaptive holdouts are not independent field validation."
+    ],
+    "update_job_id": null,
+    "update_state": null,
+    "ingestion_sync": {
+      "last_power_date": "2026-11-13",
+      "last_modis_date": "2026-10-16",
+      "last_sync_at": "2026-11-15T18:33:06.760113+00:00",
+      "latest_job": {
+        "id": 1,
+        "status": "complete",
+        "error": null,
+        "requested_at": "2026-11-15T18:32:47.944746+00:00"
+      }
+    },
+    "adaptive_ml": {
+      "is_covered_for_ml": true,
+      "model_version": "pacha-ndvi-forest-0db32a6a8cb5",
+      "trained_at": "2026-11-15T18:33:06.387613+00:00",
+      "metrics": {
+        "mae": 0.0303572163809179,
+        "rmse": 0.03716558894740373,
+        "r2": -0.2907245725033982,
+        "baseline_mae": 0.041425,
+        "baseline_rmse": 0.05005859067133233,
+        "skill_score": 0.25755822429320196
+      },
+      "last_attempt": {
+        "status": "promoted",
+        "model_version": "pacha-ndvi-forest-0db32a6a8cb5",
+        "trained_at": "2026-11-15T18:33:06.387613+00:00",
+        "n_samples": 53,
+        "training_window_start": "2023-04-22",
+        "training_window_end": "2025-09-13",
+        "validation_window": [
+          "2025-09-29",
+          "2026-06-09"
+        ],
+        "test_window": [
+          "2026-06-25",
+          "2026-10-31"
+        ],
+        "metrics": {
+          "mae": 0.0303572163809179,
+          "rmse": 0.03716558894740373,
+          "r2": -0.2907245725033982,
+          "baseline_mae": 0.041425,
+          "baseline_rmse": 0.05005859067133233,
+          "skill_score": 0.25755822429320196
+        },
+        "validation_rmse": {
+          "ridge": 0.0404909919510281,
+          "forest": 0.031387147609378635
+        },
+        "validated_cells": [
+          "-12.05000000:-75.20000000"
+        ],
+        "feature_names": [
+          "ndvi_t",
+          "ndvi_lag1",
+          "ndvi_lag2",
+          "ndvi_delta",
+          "evi_t",
+          "rain_sum_16d",
+          "rain_sum_32d",
+          "t2m_mean_16d",
+          "t2m_min_abs_16d",
+          "t2m_max_mean_16d",
+          "thermal_range_16d",
+          "sin_doy",
+          "cos_doy"
+        ],
+        "feature_importances": {
+          "ndvi_t": 0.03551213722877469,
+          "ndvi_lag1": 0.02645456585712446,
+          "ndvi_lag2": 0.09068021169181857,
+          "ndvi_delta": 0.045291292481691114,
+          "evi_t": 0.0537912081857557,
+          "rain_sum_16d": 0.1260145205637677,
+          "rain_sum_32d": 0.14521806494224268,
+          "t2m_mean_16d": 0.04811951006229445,
+          "t2m_min_abs_16d": 0.17470873591099303,
+          "t2m_max_mean_16d": 0.01729059702744729,
+          "thermal_range_16d": 0.051513479223647005,
+          "sin_doy": 0.16051788873304634,
+          "cos_doy": 0.024887788091396936
+        },
+        "reason": "Chronological holdout experiment at this query point; not regional validation.",
+        "artifact": "pacha-ndvi-forest-0db32a6a8cb5.json",
+        "artifact_sha256": "9bf54ff67d3c2d3a1c20f46b1a0e126d197619e380845081ee28e910ef921ee6"
+      }
+    }
+  }
+}

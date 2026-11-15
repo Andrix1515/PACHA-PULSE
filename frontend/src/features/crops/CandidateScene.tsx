@@ -65,6 +65,7 @@ export default function CandidateScene({
   const [assessmentKey, setAssessmentKey] = useState('')
   const [selected, setSelected] = useState('')
   const [search, setSearch] = useState('')
+  const [showAll, setShowAll] = useState(false)
   const [category, setCategory] = useState('all')
   const [family, setFamily] = useState('all')
   const [filter, setFilter] = useState('all')
@@ -117,6 +118,7 @@ export default function CandidateScene({
     const matchesSuitability = filter === 'all' || assessment?.suitability_category === filter
     return matchesSearch && matchesCategory && matchesFamily && matchesSuitability
   })
+  const shownOptions = role === 'agronomist' || showAll ? options : options.slice(0, 4)
   const crop = options.find((item) => item.id === selected) ?? options[0]
   const assessment = scopedCandidates?.find((item) => item.crop.id === crop?.id)
 
@@ -185,7 +187,7 @@ export default function CandidateScene({
 
     <p className="candidate-result-count" role="status">{scopedCandidates ? `${scopedCandidates.length} preliminary screening results; ${options.length} crop profiles shown.` : `${options.length} crop profiles in the catalogue.`}</p>
     <div className="candidate-option-grid" role="list" aria-label="Crop profiles">
-      {options.map((item) => {
+      {shownOptions.map((item) => {
         const result = scopedCandidates?.find((candidate) => candidate.crop.id === item.id)
         const isSelected = selection.includes(item.id)
         return <article className={`candidate-option-card ${result ? `screen-${result.suitability_category}` : ''}`} role="listitem" key={item.id} aria-label={`${item.common_name} crop profile`}>
@@ -214,6 +216,7 @@ export default function CandidateScene({
         </article>
       })}
     </div>
+    {role === 'grower' && options.length > 4 && <button className="secondary-button crop-list-toggle" onClick={() => setShowAll(!showAll)}>{showAll ? 'Show fewer crops' : `Show all ${options.length} crops`}</button>}
     {!options.length && !busy && <div className="empty-results"><p>No crops match these filters. Clear search or choose all categories; an empty filtered list is not evidence that nothing can grow here.</p></div>}
 
     {crop && <article className="candidate-card candidate-full-profile" aria-label={`${crop.common_name} detailed crop profile`}>

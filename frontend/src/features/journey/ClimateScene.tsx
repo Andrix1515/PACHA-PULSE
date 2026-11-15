@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ArrowRight, CalendarDays, Database, LoaderCircle, MapPin } from 'lucide-react'
-import type { ClimateResponse, Location, UserRole } from '../../types'
+import type { ClimateResponse, Location, UserRole, VegetationResponse, NdviPredictionResponse } from '../../types'
 import type { LessonTopic } from './journey'
 
-interface Props { location: Location | null; climate: ClimateResponse | null; loading: boolean; error: string; role: UserRole; topic: LessonTopic; onTopic: (topic: LessonTopic) => void; onLoad: (start: string, end: string, demo?: boolean) => Promise<void>; onContinue: () => void; onField: () => void }
-export default function ClimateScene({ location, climate, loading, error, role, topic, onTopic, onLoad, onContinue, onField }: Props) {
+const VegetationLesson = lazy(() => import('./VegetationLesson'))
+
+interface Props { onPrediction?: (data: NdviPredictionResponse | null) => void; onVegetation?: (data: VegetationResponse | null) => void; location: Location | null; climate: ClimateResponse | null; loading: boolean; error: string; role: UserRole; topic: LessonTopic; onTopic: (topic: LessonTopic) => void; onLoad: (start: string, end: string, demo?: boolean) => Promise<void>; onContinue: () => void; onField: () => void }
+export default function ClimateScene({ onPrediction, onVegetation, location, climate, loading, error, role, topic, onTopic, onLoad, onContinue, onField }: Props) {
   const [start, setStart] = useState('2025-01-01')
   const [end, setEnd] = useState('2025-01-31')
   const [validation, setValidation] = useState('')
@@ -14,6 +16,9 @@ export default function ClimateScene({ location, climate, loading, error, role, 
   const value = climate ? rain ? climate.summary.rainfall_total.value : climate.summary.temperature_mean.value : null
   const variable = rain ? 'PRECTOTCORR' : 'T2M'
   return <div className="weather-story">
+    <div className="lesson-tabs environment-tabs" role="group" aria-label="Explore weather or satellite history"><button aria-pressed={topic !== 'vegetation'} onClick={() => onTopic('rainfall')}>Weather</button><button aria-pressed={topic === 'vegetation'} onClick={() => onTopic('vegetation')}>Satellite greenness</button></div>
+    {topic === 'vegetation' ? <Suspense fallback={<p role="status">Opening satellite history?</p>}><VegetationLesson location={location} role={role} onData={onVegetation} onPrediction={onPrediction} /></Suspense> : <>
+
     {!climate ? <div className="weather-introduction scene-reveal"><span className="eyebrow">A LITTLE CONTEXT FOR YOUR LAND</span><h1 id="climate-scene-heading" tabIndex={-1}>First, let us look<br /><em>at the weather.</em></h1><p>Past rainfall and temperature, explained one thing at a time.</p><div className="weather-start-options">{location ? <><div className="weather-location"><MapPin size={18} /><span>Your query point: {location.lat.toFixed(4)}°, {location.lon.toFixed(4)}°</span></div><div className="weather-date-fields"><label>Start date<input type="date" value={start} onChange={(event) => setStart(event.target.value)} /></label><label>End date<input type="date" value={end} onChange={(event) => setEnd(event.target.value)} /></label></div><button className="primary-button" disabled={loading} onClick={query}>{loading ? <><LoaderCircle size={17} className="loading-icon" />Reading observations...</> : <>Read my historical weather<ArrowRight size={17} /></>}</button></> : <button className="primary-button" onClick={onField}>Choose my field first<ArrowRight size={17} /></button>}<div className="weather-example-divider"><span>or learn with an example</span></div><button className="weather-example-button" disabled={loading} onClick={() => { setStart('2025-01-01'); setEnd('2025-01-31'); setValidation(''); onTopic('rainfall'); void onLoad('2025-01-01', '2025-01-31', true) }}><Database size={22} /><span><strong>Explore the Mantaro example</strong><small>Real NASA data · January 2025 · changes the query point to Mantaro</small></span><ArrowRight size={18} /></button></div></div> : <div className="weather-lesson scene-reveal" aria-label="NASA POWER weather results">
       <div className="lesson-tabs" role="group" aria-label="Weather explanation">{([{ id: 'rainfall', label: 'The rainfall' }, { id: 'temperature', label: 'The temperature' }, { id: 'meaning', label: 'What can I learn?' }] as const).map((item) => <button key={item.id} aria-pressed={topic === item.id} onClick={() => onTopic(item.id)}>{item.label}</button>)}</div>
       <p className="weather-source-chip">{climate.delivery === 'saved_observation' ? 'Saved Mantaro example' : 'Your selected query point'} · {climate.start} to {climate.end}</p>
@@ -25,5 +30,5 @@ export default function ClimateScene({ location, climate, loading, error, role, 
     </div>}
     {(validation || error) && <p className="field-error" role="alert">{validation || error}</p>}
     {loading && <p className="helper-text" role="status">Loading the source. This may take up to a minute.</p>}
-  </div>
+  </>}</div>
 }

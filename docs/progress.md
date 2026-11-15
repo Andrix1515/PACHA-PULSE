@@ -1,3 +1,23 @@
+# Current local update - 2026-11-15: 3D Parcel Simulator, Animated Cloud Bubble, Role Modes & Brand Logo
+
+## Implemented locally
+
+- **Brand Logo (`Logo.jpeg`)**: Integrated the official team logo into `frontend/public/art/logo.jpeg`, `frontend/index.html` favicon, the top workspace header (`App.tsx`), the cloud navigation menu (`JourneyMenu.tsx`), and the project landing page (`ProjectPage.tsx`).
+- **Pacha Animated Cloud Bubble & Collision-Free Layout**:
+  - Redesigned Pacha's dialog container in `PachaStage.tsx` and `depth.css` as an animated cloud speech bubble (`.pacha-cloud-bubble` with cloud puffs and `.pacha-cloud-tail`).
+  - Dynamic bounding-box layout (`bubbleRect`) guarantees Pacha's 3D character and cloud bubble never overlap on desktop or mobile, and never cover scene controls.
+  - Eliminated fixed-position element overlaps across scrollable scenes (`integration.css`, `journey.css`, `depth.css`) and hid unfocused `.skip-link`.
+- **Grower vs. Agronomist Mode & Accessible Typography**:
+  - Updated `guidanceFor(scene, focus, role)` in `journey.ts` to provide larger, concise, farmer-friendly summaries in `grower` mode (`17px` body, `25px` heading) and detailed technical validation notes in `agronomist` mode (resolutions, depth layers, FAO-56/ECOCROP thresholds, and auto-expanded `<details>` tables in `FieldEvidenceScene.tsx` and `RotationPlanner.tsx`).
+  - Increased small font sizes (`9px–12px`) across the interface for comfortable reading.
+- **Interactive 3D Parcel & Crop Simulator (`FieldExplorer.tsx`, `fieldGeometry.ts`, `fieldSimulation.ts`, `fieldRenderer.ts`)**:
+  - Subdivides the user's saved parcel polygon into 4 interactive planting zones (`NW`, `NE`, `SW`, `SE`) with real area calculation in hectares (`ha`) derived from the polygon's spherical area (`computeParcelSectors`).
+  - Supports toggling individual zones (via UI buttons or direct 3D raycast click on the parcel ground) with a 3D planting wave and sector pulse animation (`prefers-reduced-motion` aware).
+  - Evaluates **Crop × Area (`ha`) × Cycle Duration (`days`) × Sowing Month × NASA POWER Climate** (`simulateParcelCrop`), showing thermal compatibility, frost watch, scaled cycle rainfall (`mm`), physical rainwater volume (`m³`) over the selected area, and biological N₂ fixation reference for legumes.
+  - Connects live to Pacha's Cloud Bubble and allows saving the simulated crop and allocated area (`ha`) directly into the user's agricultural profile (`Use area & crop in my plan`) and exported JSON report (`field_simulation`).
+
+---
+
 # Current local integration - 2026-11-15
 
 **integracion-visuales** combines fetched main dd63dfa and TetoFan 12e640d. Our visuals/interactivity take priority; main's soil/terrain providers and scientific engine remain unchanged. New explicit evidence/crop scenes connect those services to the guided flow. One crop-route cache-key mismatch was repaired with a regression test. See MAIN_INTEGRATION.md for the nine conflict resolutions and exact ownership.

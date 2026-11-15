@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Check, Droplets, HelpCircle, Sprout } from 'luci
 import type { AgriculturalProfile } from '../../types'
 import ProfileForm from '../parcel/ProfileForm'
 
-export default function ProfileScene({ profile, onSave, onContinue, onStep, onCrops }: { profile: AgriculturalProfile; onSave: (profile: AgriculturalProfile) => void; onContinue: () => void; onStep: (step: number) => void; onCrops?: () => void }) {
+export default function ProfileScene({ profile, onSave, onContinue, onStep, onCrops, onSimulate3D }: { profile: AgriculturalProfile; onSave: (profile: AgriculturalProfile) => void; onContinue: () => void; onStep: (step: number) => void; onCrops?: () => void; onSimulate3D?: () => void }) {
   const [step, setStep] = useState(0)
   const [name, setName] = useState(profile.name)
   const [crop, setCrop] = useState(profile.crop)
@@ -19,6 +19,7 @@ export default function ProfileScene({ profile, onSave, onContinue, onStep, onCr
       <div className="question-actions">{step > 0 && <button className="text-button" type="button" onClick={() => { setStep(step - 1); onStep(step - 1) }}><ArrowLeft size={16} />Back</button>}<button className="primary-button" type="submit">{step === 2 ? 'Let us look at the weather' : 'Continue'}<ArrowRight size={18} /></button></div>
     </form>
     {step === 1 && onCrops && <button className="text-button" onClick={onCrops}>Explore crop options for this field<ArrowRight size={16} /></button>}
+    {onSimulate3D && <button className="text-button" type="button" onClick={onSimulate3D}><Sprout size={16} />Open 3D parcel simulator<ArrowRight size={16} /></button>}
     <details className="profile-extra-tools"><summary>Other details I know</summary><ProfileForm profile={profile} onSave={onSave} /></details>
     <p className="session-footnote">Remembered in this tab. Unknown answers can stay unknown.</p>
   </div>

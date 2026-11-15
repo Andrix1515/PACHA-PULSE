@@ -36,18 +36,23 @@ export default function PachaStage({ scene, focus = scene, guidance, guided, pau
           naming: [.82, .56], crop: [.78, .54], water: [.85, .58], rainfall: [.78, .57], temperature: [.85, .56], meaning: [.80, .59],
           baseline: [.80, .57], alternative_a: [.85, .56], alternative_b: [.78, .58], scenario: [.84, .57], results: [.79, .58], exploring_3d: [.84, .48], drawing: [.86, .52],
         }
+        const bubbleAbove = (scene !== 'welcome' && scene !== 'field') || focus === 'exploring_3d'
         const anchor = positions[focus] || positions[scene]
         if (bubbleRect && bubbleRect.width > 0) {
+          if (!bubbleAbove) {
+            const availTop = Math.max(135, bubbleRect.top - 84)
+            size = Math.min(size, Math.floor(availTop / 1.35))
+            y = Math.max(76, bubbleRect.top - size * 1.35 - 12)
+          } else {
+            const minTop = bubbleRect.bottom + 18
+            const availHeight = Math.max(135, height - minTop - 16)
+            size = Math.min(size, Math.floor(availHeight / 1.35))
+            y = Math.max(minTop, Math.min(height - size * 1.35 - 16, Math.max(minTop, height * anchor[1])))
+          }
           const minX = Math.max(width * .62, bubbleRect.left - 10)
           const maxX = Math.min(width - size - 20, bubbleRect.right - size + 10)
           const ratio = Math.max(0, Math.min(1, (anchor[0] - .75) / .12))
           x = minX + (maxX - minX) * ratio
-          if (scene === 'welcome' || scene === 'field') {
-            y = Math.max(88, bubbleRect.top - size * 1.24 - 12)
-          } else {
-            const minTop = bubbleRect.bottom + 18
-            y = Math.max(minTop, Math.min(height - size * 1.32 - 24, Math.max(minTop, height * anchor[1])))
-          }
         } else {
           x = Math.min(width - size - 24, Math.max(width * .66, width * anchor[0] - size / 2))
           y = Math.min(height - size * 1.35 - 65, Math.max(95, height * anchor[1]))
@@ -80,7 +85,7 @@ export default function PachaStage({ scene, focus = scene, guidance, guided, pau
   }, [scene, focus, paused, resting, guided, expanded, role])
   useEffect(() => () => animation.current?.cancel(), [])
   const expression: PachaMood = travelling ? 'travel' : focus === 'temperature' ? 'curious' : focus === 'crop' || focus === 'alternative_a' ? 'point' : guidance.mood
-  const bubbleAbove = scene !== 'welcome' && scene !== 'field'
+  const bubbleAbove = (scene !== 'welcome' && scene !== 'field') || focus === 'exploring_3d'
   return <aside className={`pacha-stage ${guided ? 'is-guided' : 'is-quiet'} ${bubbleAbove ? 'bubble-above' : 'bubble-below'}`} data-focus={focus} data-scene={scene} data-role={role || 'grower'} aria-label="Pacha's guidance">
     <div className="pacha-avatar-pocket" ref={pocket} aria-hidden="true" />
     <div ref={avatar} className={`pacha-stage-character ${travelling ? 'is-travelling' : ''}`} data-travelling={travelling}>

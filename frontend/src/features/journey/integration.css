@@ -1,36 +1,37 @@
 /* Shared provider features inside the existing guided, accessible visual system. */
 .field-evidence-scene,.candidate-scene{color:#344c36;overflow-wrap:anywhere}
 .field-evidence-scene>.lesson-tabs{flex-wrap:wrap;margin:25px 0 18px}
-.evidence-query,.candidate-context{font-size:13px;line-height:1.7;margin:18px 0;color:#506146}
-.evidence-result,.candidate-card{margin:27px 0;padding:25px;border:1px solid #c4cbb0;border-radius:23px;background:#fffdf5}
-.evidence-result h2,.candidate-card h2{font-size:27px;line-height:1.3;margin:0 0 12px}
-.evidence-result p,.candidate-card p,.candidate-compare p,.agronomy-review p{line-height:1.8;font-size:14px}
+.evidence-query,.candidate-context{font-size:14.5px;line-height:1.75;margin:18px 0;color:#45583a;font-weight:550}
+.evidence-result,.candidate-card{margin:27px 0;padding:26px;border:1.5px solid #bec9a9;border-radius:24px;background:#fffdf5;box-shadow:0 6px 20px #344c360a}
+.evidence-result h2,.candidate-card h2{font-size:28px;line-height:1.28;margin:0 0 12px}
+.evidence-result p,.candidate-card p,.candidate-compare p,.agronomy-review p{line-height:1.8;font-size:15.5px;color:#394f30}
+.journey-shell[data-role=grower] .evidence-result p,.journey-shell[data-role=grower] .candidate-card p,.journey-shell[data-role=grower] .scene-description{font-size:16.5px;line-height:1.82}
 .evidence-key-metrics{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:24px 0}
 .evidence-key-metrics>div{display:grid;align-content:start;gap:9px;min-width:0}
-.evidence-key-metrics span{font-size:13px}
-.evidence-key-metrics strong{font-size:34px;line-height:1.2;font-weight:800}
-.evidence-key-metrics .evidence-text-metric{font-size:25px}
+.evidence-key-metrics span{font-size:14px;font-weight:650;color:#465b38}
+.evidence-key-metrics strong{font-size:35px;line-height:1.2;font-weight:800}
+.evidence-key-metrics .evidence-text-metric{font-size:26px}
 .evidence-result :is(details,dl),.candidate-details,.agronomy-review{margin-top:22px}
-.evidence-result summary,.candidate-details summary,.candidate-compare summary,.agronomy-review summary,.rotation-assumptions summary{cursor:pointer;font-size:14px;font-weight:800;line-height:1.6;padding:12px 0}
-.evidence-result dl,.candidate-details dl,.agronomy-review dl{display:grid;gap:15px;font-size:14px;line-height:1.6}
+.evidence-result summary,.candidate-details summary,.candidate-compare summary,.agronomy-review summary,.rotation-assumptions summary{cursor:pointer;font-size:15px;font-weight:800;line-height:1.6;padding:12px 0}
+.evidence-result dl,.candidate-details dl,.agronomy-review dl{display:grid;gap:15px;font-size:14.5px;line-height:1.65}
 .evidence-result dl>div,.candidate-details dl>div,.agronomy-review dl>div{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-bottom:1px solid #dde2cc;padding-bottom:12px}
 .evidence-result dt,.candidate-details dt,.agronomy-review dt{font-weight:750}
 .evidence-result dd,.candidate-details dd,.agronomy-review dd{margin:0}
-.evidence-source{border-top:1px solid #d4dcc5;margin-top:25px;padding-top:6px;font-size:12px}
-.evidence-source p{font-size:12px}
-.evidence-result ul,.candidate-card ul,.agronomy-review ul{padding-left:19px;font-size:14px;line-height:1.8}
+.evidence-source{border-top:1px solid #d4dcc5;margin-top:25px;padding-top:8px;font-size:13.5px}
+.evidence-source p{font-size:13.5px}
+.evidence-result ul,.candidate-card ul,.agronomy-review ul{padding-left:19px;font-size:15px;line-height:1.8}
 .provider-list{list-style:none;padding:0!important;display:grid;gap:22px}
 .provider-list li{display:grid;gap:7px;padding-bottom:18px;border-bottom:1px solid #d4dcc5}
-.provider-list span,.provider-list small{font-size:13px}
+.provider-list span,.provider-list small{font-size:14px}
 .provider-list a{color:#385b30;text-decoration:underline;text-underline-offset:3px}
 .candidate-controls{margin:27px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.candidate-controls label,.rotation-assumptions label,.map-layer-selector{display:grid;gap:9px;font-size:13px;font-weight:750;color:#344c36}
-.candidate-controls input,.candidate-controls select,.rotation-assumptions input,.rotation-assumptions select,.map-layer-selector select{width:100%;min-width:0;min-height:46px;border:1px solid #b5c0a1;background:#fffdf5;color:#344c36;border-radius:12px;padding:10px;font-size:14px}
+.candidate-controls label,.rotation-assumptions label,.map-layer-selector{display:grid;gap:9px;font-size:14px;font-weight:750;color:#344c36}
+.candidate-controls input,.candidate-controls select,.rotation-assumptions input,.rotation-assumptions select,.map-layer-selector select{width:100%;min-width:0;min-height:48px;border:1px solid #b5c0a1;background:#fffdf5;color:#344c36;border-radius:12px;padding:10px 12px;font-size:15px}
 .candidate-choose{grid-column:1/-1}
-.candidate-card .eyebrow{font-size:11px}
-.candidate-card>p i{font-size:14px}
+.candidate-card .eyebrow{font-size:12px}
+.candidate-card>p i{font-size:15px}
 .candidate-assessment{background:#eff2e2;border-radius:14px;margin:22px 0;padding:18px}
-.candidate-compare-check{display:flex;align-items:center;gap:12px;font-size:13px;min-height:44px;cursor:pointer}
+.candidate-compare-check{display:flex;align-items:center;gap:12px;font-size:14.5px;min-height:44px;cursor:pointer;font-weight:650}
 .candidate-compare-check input{width:22px;height:22px;accent-color:#385b30;flex-shrink:0}
 .candidate-compare{margin:25px 0}
 .candidate-compare details{margin-top:22px}
@@ -39,8 +40,8 @@
 .rotation-assumptions{margin:18px 0;border-top:1px solid #c8d1b7;border-bottom:1px solid #c8d1b7;padding-bottom:12px}
 .rotation-assumptions label{margin:12px 0}
 .agronomy-review{border-top:1px solid #c8d1b7;padding:7px 0}
-.agronomy-review table,.evidence-result table{min-width:0;font-size:12px}
+.agronomy-review table,.evidence-result table{min-width:0;font-size:13.5px}
 .agronomy-review td,.agronomy-review th,.evidence-result td,.evidence-result th{white-space:normal;overflow-wrap:anywhere}
 .map-layer-selector{margin:0 0 15px;max-width:360px}
 @media(max-width:760px){.evidence-result,.candidate-card{padding:19px}.candidate-controls{grid-template-columns:1fr}.evidence-key-metrics{gap:16px}.evidence-key-metrics strong{font-size:28px}.evidence-key-metrics .evidence-text-metric{font-size:21px}.evidence-result dl>div,.candidate-details dl>div,.agronomy-review dl>div{grid-template-columns:1fr;gap:4px}}
-@media(max-width:359px){.field-evidence-scene>.lesson-tabs{gap:5px}.evidence-key-metrics{grid-template-columns:1fr}.evidence-result,.candidate-card{padding:16px}.evidence-result h2,.candidate-card h2{font-size:23px}}
+@media(max-width:359px){.field-evidence-scene>.lesson-tabs{gap:5px}.evidence-key-metrics{grid-template-columns:1fr}.evidence-result,.candidate-card{padding:16px}.evidence-result h2,.candidate-card h2{font-size:23px}.brand-logo-img{width:22px;height:22px}}

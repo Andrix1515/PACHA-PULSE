@@ -120,6 +120,30 @@ test('3D sequence and campaign selectors use the actual compared crops', async (
   await accessible(page)
 })
 
+test('3D parcel simulator toggles planting zones, calculates real area & time with climate, and applies to profile', async ({ page }) => {
+  await outline(page)
+  await page.getByRole('button', { name: 'Explore in 3D', exact: true }).click()
+  const simDetails = page.locator('.explorer-sim-details')
+  if (!(await simDetails.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await simDetails.locator('summary').click()
+  }
+  await expect(page.locator('.sim-area-readout')).toContainText('100% of')
+  const nwBtn = page.getByRole('group', { name: 'Parcel planting zones' }).getByRole('button', { name: /NW/ })
+  await nwBtn.click()
+  await expect(nwBtn).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.sim-area-readout')).not.toContainText('100% of')
+  await page.getByRole('combobox', { name: 'Illustrate a crop' }).selectOption('bean')
+  await page.getByLabel('Cycle (days)').fill('100')
+  await expect(page.locator('.growth-timeline .eyebrow')).toContainText('/100')
+  await expect(page.locator('.pacha-cloud-bubble')).toContainText('100 days')
+  await page.getByRole('button', { name: 'Use area & crop in my plan' }).click()
+  await expect(page.getByRole('button', { name: 'Saved to field plan' })).toBeVisible()
+  const savedProfile = await page.evaluate(() => JSON.parse(sessionStorage.getItem('pacha-pulse.journey.v1')!).profile)
+  expect(savedProfile.crop).toBe('Bean')
+  expect(savedProfile.areaHa).toBeGreaterThan(0)
+  await accessible(page)
+})
+
 test('Pacha travels between scenes in the same live canvas and respects pause', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')

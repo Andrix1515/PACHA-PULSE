@@ -1,5 +1,11 @@
 # Decisions
 
+## 3D parcel simulator, cloud bubble, and role-differentiated UX - 2026-11-15
+
+1. **Interactive 3D Parcel Simulator with Scientific Boundaries**: Divide the normalized 3D parcel footprint into 4 centroid-quadrant zones (`NW`, `NE`, `SW`, `SE`) whose areas (`ha`) sum to the user's spherical polygon area. Combine selected crop, planted zone area (`ha`), campaign duration (`days`), and sowing month with loaded NASA POWER observations and FAO-56/ECOCROP catalog bounds. Label all simulator outputs as illustrative/derived references; never invent crop yields, financial returns, or guaranteed suitability.
+2. **Role-Differentiated Guidance (`grower` vs. `agronomist`)**: Keep a single shared scientific calculation engine while tailoring presentation density and typography. `grower` mode uses larger text and plain-language summaries; `agronomist` mode exposes spatial/temporal resolutions, soil depth intervals, sequence rule metrics, and expands technical `<details>` sections by default.
+3. **Animated Cloud Bubble & Non-Overlapping Layout**: Replace the rectangular speech card with `.pacha-cloud-bubble` and compute Pacha's 3D stage coordinates from the rendered bubble bounding box so character, bubble, and scene controls never collide across desktop or mobile viewports.
+
 ## Map depth and character travel - 2026-11-15
 
 - Keep precise 2D editing, and add a separate 3D inspection of the same saved polygon. Flat ground and plant stages are explicitly illustrative; actual compared sequences can drive crop/campaign selection. This avoids importing unverified simulation values from the team's mockups.

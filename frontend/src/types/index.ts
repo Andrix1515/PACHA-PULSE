@@ -18,11 +18,15 @@ export interface AssistantProposal {
   label: string
   reason: string
   view?: AppView | null
+  scene?: JourneyContext['scene'] | null
   profile?: Partial<AgriculturalProfile> | null
   location?: { lat: number; lon: number } | null
 }
 
+export interface JourneyContext { scene: 'welcome' | 'field' | 'profile' | 'evidence' | 'crops' | 'climate' | 'planning' | 'charts' | 'summary' | 'help'; step: number; detail: string; mode: 'guided' | 'explore' }
+
 export interface AssistantContext {
+  journey?: JourneyContext
   view: AppView
   role: UserRole
   profile: AgriculturalProfile

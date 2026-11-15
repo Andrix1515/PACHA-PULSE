@@ -1,0 +1,247 @@
+{
+  "verification": "Direct execution of unchanged main provider implementations; live responses, not browser fixtures",
+  "queried_point": {
+    "lat": -12.05,
+    "lon": -75.2
+  },
+  "results": {
+    "terrain": {
+      "lat": -12.05,
+      "lon": -75.2,
+      "elevation_m": 3296.0,
+      "elevation_min_m": 3284.0,
+      "elevation_max_m": 3302.0,
+      "relief_m": 18.0,
+      "slope_percent": 8.3,
+      "slope_degrees": 4.7,
+      "aspect": "W",
+      "dem_source": "Copernicus DEM 90m / SRTM",
+      "provenance": {
+        "source": "Copernicus DEM 90m / SRTM via Open-Meteo",
+        "provider_id": "elevation_terrain",
+        "retrieved_at": "2026-11-15T14:46:41.050669+00:00",
+        "observed_period": null,
+        "spatial_resolution": "Copernicus DEM 90 m / SRTM 30 m",
+        "data_quality": "measured",
+        "status": "derived",
+        "limitations": [
+          "DEM resolutions (30-90m) smooth fine-scale micro-topography, terraces, and drainage ditches.",
+          "Slope estimation is derived from sample points across the field polygon."
+        ]
+      },
+      "warnings": []
+    },
+    "soil": {
+      "lat": -12.05,
+      "lon": -75.2,
+      "ph_h2o": {
+        "name": "phh2o",
+        "description": "Soil pH in H2O",
+        "unit": "pH",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 6.34,
+            "unit": "pH",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 6.33,
+            "unit": "pH",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 6.34,
+            "unit": "pH",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 6.34,
+        "status": "observed"
+      },
+      "soil_organic_carbon": {
+        "name": "soc",
+        "description": "Soil Organic Carbon",
+        "unit": "%",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 3.83,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 2.44,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 1.56,
+            "unit": "%",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 2.61,
+        "status": "observed"
+      },
+      "total_nitrogen": {
+        "name": "nitrogen",
+        "description": "Total Nitrogen",
+        "unit": "g/kg",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 3.44,
+            "unit": "g/kg",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 2.17,
+            "unit": "g/kg",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 1.75,
+            "unit": "g/kg",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 2.45,
+        "status": "observed"
+      },
+      "texture_clay_percent": {
+        "name": "clay",
+        "description": "Clay fraction (<2 \u00b5m)",
+        "unit": "%",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 30.14,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 31.12,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 31.68,
+            "unit": "%",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 30.98,
+        "status": "observed"
+      },
+      "texture_sand_percent": {
+        "name": "sand",
+        "description": "Sand fraction (50\u20132000 \u00b5m)",
+        "unit": "%",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 39.98,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 39.18,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 38.81,
+            "unit": "%",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 39.32,
+        "status": "observed"
+      },
+      "texture_silt_percent": {
+        "name": "silt",
+        "description": "Silt fraction (2\u201350 \u00b5m)",
+        "unit": "%",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 29.88,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 29.69,
+            "unit": "%",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 29.51,
+            "unit": "%",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 29.69,
+        "status": "observed"
+      },
+      "bulk_density": {
+        "name": "bdod",
+        "description": "Bulk density of fine earth",
+        "unit": "g/cm\u00b3",
+        "layers": [
+          {
+            "depth_range": "0-5cm",
+            "mean_value": 1.25,
+            "unit": "g/cm\u00b3",
+            "status": "observed"
+          },
+          {
+            "depth_range": "5-15cm",
+            "mean_value": 1.29,
+            "unit": "g/cm\u00b3",
+            "status": "observed"
+          },
+          {
+            "depth_range": "15-30cm",
+            "mean_value": 1.31,
+            "unit": "g/cm\u00b3",
+            "status": "observed"
+          }
+        ],
+        "profile_mean": 1.28,
+        "status": "observed"
+      },
+      "soil_texture_class": "clay_loam",
+      "estimated_soil_depth_cm": null,
+      "drainage_class": "moderate",
+      "provenance": {
+        "source": "ISRIC SoilGrids 250 m v2.0 \u2014 WCS 2.0.1 (maps.isric.org)",
+        "provider_id": "soilgrids_isric",
+        "retrieved_at": "2026-11-15T14:46:48.672320+00:00",
+        "observed_period": null,
+        "spatial_resolution": "Nominal 250 m \u00d7 250 m grid cell",
+        "data_quality": "modeled",
+        "status": "derived",
+        "limitations": [
+          "SoilGrids represents statistical machine learning predictions based on global soil profiles and remote sensing covariates.",
+          "Nominal resolution is ~250 m; localized field variations, plow pans, or recent amendments are not reflected.",
+          "Accessed via ISRIC WCS 2.0.1 (maps.isric.org). The legacy REST API (rest.isric.org) is deprecated.",
+          "Always verify critical management decisions with laboratory soil testing."
+        ]
+      },
+      "warnings": []
+    }
+  }
+}

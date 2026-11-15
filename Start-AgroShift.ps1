@@ -1,4 +1,4 @@
-param([switch]$Stop, [switch]$NoBrowser, [ValidateRange(1024,65535)][int]$WebPort = 5173, [ValidateRange(1024,65535)][int]$ApiPort = 8000)
+param([switch]$Stop, [switch]$NoBrowser, [switch]$WithDataWorker, [ValidateRange(1024,65535)][int]$WebPort = 5173, [ValidateRange(1024,65535)][int]$ApiPort = 8000)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
@@ -10,6 +10,11 @@ function Test-OwnedProcess($entry) {
     if ($entry.root -ne $projectRoot) { return $false }
     $process = Get-Process -Id $entry.pid -ErrorAction SilentlyContinue
     return ($null -ne $process -and $process.StartTime.ToUniversalTime().Ticks.ToString() -eq $entry.startedTicks)
+}
+
+function Start-DataWorker {
+    $workerPython = Join-Path $projectRoot 'backend\.venv\Scripts\python.exe'
+    return Start-Process -FilePath $workerPython -ArgumentList '-m', 'scripts.update_observations', '--watch' -WorkingDirectory (Join-Path $projectRoot 'backend') -WindowStyle Hidden -RedirectStandardOutput (Join-Path $runtimeRoot 'worker.stdout.log') -RedirectStandardError (Join-Path $runtimeRoot 'worker.stderr.log') -PassThru
 }
 
 $previous = @()
@@ -32,6 +37,12 @@ if ($Stop) {
                     }
                 }
             }
+            if ($entry.name -eq 'data-worker') {
+                $workerChildren = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($entry.pid)")
+                foreach ($child in $workerChildren) {
+                    if ($child.CommandLine -like '*-m scripts.update_observations --watch*') { Stop-Process -Id $child.ProcessId -ErrorAction SilentlyContinue }
+                }
+            }
             Stop-Process -Id $entry.pid -ErrorAction SilentlyContinue
             Write-Host "Stopped: $($entry.name)"
         }
@@ -42,7 +53,12 @@ if ($Stop) {
 }
 
 $running = @($previous | Where-Object { Test-OwnedProcess $_ })
-if ($running.Count -eq 2) {
+if (@($running | Where-Object { $_.name -in @('api','web') }).Count -eq 2) {
+    if ($WithDataWorker -and @($running | Where-Object { $_.name -eq 'data-worker' }).Count -eq 0) {
+        $worker = Start-DataWorker
+        $running += @{name='data-worker'; root=$projectRoot; port=0; pid=$worker.Id; startedTicks=$worker.StartTime.ToUniversalTime().Ticks.ToString()}
+        $running | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
+    }
     $WebPort = ($running | Where-Object { $_.name -eq 'web' }).port
     $appUrl = "http://localhost:$WebPort"
     Write-Host "Pacha Pulse is already running: $appUrl"
@@ -81,7 +97,13 @@ try {
         $web = Start-Process -FilePath $nodePath -ArgumentList '.\node_modules\vite\bin\vite.js', '--host', '127.0.0.1', '--port', $WebPort, '--strictPort' -WorkingDirectory (Join-Path $projectRoot 'frontend') -WindowStyle Hidden -RedirectStandardOutput (Join-Path $runtimeRoot 'web.stdout.log') -RedirectStandardError (Join-Path $runtimeRoot 'web.stderr.log') -PassThru
     } finally { $env:API_PROXY_TARGET = $previousProxy }
     $created += $web
-    @(@{name='api'; root=$projectRoot; port=$ApiPort; pid=$api.Id; startedTicks=$api.StartTime.ToUniversalTime().Ticks.ToString()}, @{name='web'; root=$projectRoot; port=$WebPort; pid=$web.Id; startedTicks=$web.StartTime.ToUniversalTime().Ticks.ToString()}) | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
+    $entries = @(@{name='api'; root=$projectRoot; port=$ApiPort; pid=$api.Id; startedTicks=$api.StartTime.ToUniversalTime().Ticks.ToString()}, @{name='web'; root=$projectRoot; port=$WebPort; pid=$web.Id; startedTicks=$web.StartTime.ToUniversalTime().Ticks.ToString()})
+    if ($WithDataWorker) {
+        $worker = Start-DataWorker
+        $created += $worker
+        $entries += @{name='data-worker'; root=$projectRoot; port=0; pid=$worker.Id; startedTicks=$worker.StartTime.ToUniversalTime().Ticks.ToString()}
+    }
+    $entries | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
     $ready = $false
     for ($attempt = 0; $attempt -lt 35; $attempt++) {
         if ($api.HasExited -or $web.HasExited) { throw 'A server exited during startup. Check the logs in .local.' }

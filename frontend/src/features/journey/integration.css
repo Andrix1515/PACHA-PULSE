@@ -1,0 +1,86 @@
+/* Shared provider features inside the existing guided, accessible visual system. */
+.field-evidence-scene,.candidate-scene{color:#344c36;overflow-wrap:anywhere}
+.field-evidence-scene>.lesson-tabs{flex-wrap:wrap;margin:25px 0 18px}
+.evidence-query,.candidate-context{font-size:14.5px;line-height:1.75;margin:18px 0;color:#45583a;font-weight:550}
+.evidence-result,.candidate-card{margin:27px 0;padding:26px;border:1.5px solid #bec9a9;border-radius:24px;background:#fffdf5;box-shadow:0 6px 20px #344c360a}
+.evidence-result h2,.candidate-card h2{font-size:28px;line-height:1.28;margin:0 0 12px}
+.evidence-result p,.candidate-card p,.candidate-compare p,.agronomy-review p{line-height:1.8;font-size:15.5px;color:#394f30}
+.journey-shell[data-role=grower] .evidence-result p,.journey-shell[data-role=grower] .candidate-card p,.journey-shell[data-role=grower] .scene-description{font-size:16.5px;line-height:1.82}
+.evidence-key-metrics{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:24px 0}
+.evidence-key-metrics>div{display:grid;align-content:start;gap:9px;min-width:0}
+.evidence-key-metrics span{font-size:14px;font-weight:650;color:#465b38}
+.evidence-key-metrics strong{font-size:35px;line-height:1.2;font-weight:800}
+.evidence-key-metrics .evidence-text-metric{font-size:26px}
+.evidence-result :is(details,dl),.candidate-details,.agronomy-review{margin-top:22px}
+.evidence-result summary,.candidate-details summary,.candidate-compare summary,.agronomy-review summary,.rotation-assumptions summary{cursor:pointer;font-size:15px;font-weight:800;line-height:1.6;padding:12px 0}
+.evidence-result dl,.candidate-details dl,.agronomy-review dl{display:grid;gap:15px;font-size:14.5px;line-height:1.65}
+.evidence-result dl>div,.candidate-details dl>div,.agronomy-review dl>div{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-bottom:1px solid #dde2cc;padding-bottom:12px}
+.evidence-result dt,.candidate-details dt,.agronomy-review dt{font-weight:750}
+.evidence-result dd,.candidate-details dd,.agronomy-review dd{margin:0}
+.evidence-source{border-top:1px solid #d4dcc5;margin-top:25px;padding-top:8px;font-size:13.5px}
+.evidence-source p{font-size:13.5px}
+.evidence-result ul,.candidate-card ul,.agronomy-review ul{padding-left:19px;font-size:15px;line-height:1.8}
+.provider-list{list-style:none;padding:0!important;display:grid;gap:22px}
+.provider-list li{display:grid;gap:7px;padding-bottom:18px;border-bottom:1px solid #d4dcc5}
+.provider-list span,.provider-list small{font-size:14px}
+.provider-list a{color:#385b30;text-decoration:underline;text-underline-offset:3px}
+.candidate-controls{margin:27px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.candidate-controls label,.rotation-assumptions label,.map-layer-selector{display:grid;gap:9px;font-size:14px;font-weight:750;color:#344c36}
+.candidate-controls input,.candidate-controls select,.rotation-assumptions input,.rotation-assumptions select,.map-layer-selector select{width:100%;min-width:0;min-height:48px;border:1px solid #b5c0a1;background:#fffdf5;color:#344c36;border-radius:12px;padding:10px 12px;font-size:15px}
+.candidate-choose{grid-column:1/-1}
+.candidate-card .eyebrow{font-size:12px}
+.candidate-card>p i{font-size:15px}
+.candidate-assessment{background:#eff2e2;border-radius:14px;margin:22px 0;padding:18px}
+.candidate-compare-check{display:flex;align-items:center;gap:12px;font-size:14.5px;min-height:44px;cursor:pointer;font-weight:650}
+.candidate-compare-check input{width:22px;height:22px;accent-color:#385b30;flex-shrink:0}
+.candidate-compare{margin:25px 0}
+.candidate-compare details{margin-top:22px}
+.candidate-compare article{border-bottom:1px solid #c8d1b7;padding-bottom:15px;margin:20px 0}
+.candidate-card .findings-next-actions{flex-wrap:wrap}
+.rotation-assumptions{margin:18px 0;border-top:1px solid #c8d1b7;border-bottom:1px solid #c8d1b7;padding-bottom:12px}
+.rotation-assumptions label{margin:12px 0}
+.agronomy-review{border-top:1px solid #c8d1b7;padding:7px 0}
+.agronomy-review table,.evidence-result table{min-width:0;font-size:13.5px}
+.agronomy-review td,.agronomy-review th,.evidence-result td,.evidence-result th{white-space:normal;overflow-wrap:anywhere}
+.map-layer-selector{margin:0 0 15px;max-width:360px}
+.field-terrain-glance{position:absolute;left:8vw;top:335px;z-index:14;width:min(330px,calc(100vw - 40px));display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;padding:15px 17px;border:1px solid #bdc8a7;border-radius:16px;background:#fffcf3ed;box-shadow:0 5px 24px #364a2514;backdrop-filter:blur(7px);color:#344c36}
+.field-terrain-glance>div{display:grid;gap:4px}
+.field-terrain-glance span,.field-terrain-glance small{font-size:11px;color:#536447}
+.field-terrain-glance strong{font-size:15px;font-variant-numeric:tabular-nums}
+.field-terrain-glance small{grid-column:1/-1;line-height:1.55}
+.field-terrain-glance button{grid-column:1/-1;justify-self:start;min-height:36px;border:0;background:transparent;color:#385b30;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:750}
+.candidate-result-count{font-size:13px!important;color:#566647!important;margin:15px 0}
+.candidate-option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:15px;margin:18px 0}
+.candidate-option-card{display:flex;flex-direction:column;gap:12px;min-width:0;padding:19px;border:1px solid #c5cfb2;border-radius:19px;background:#fffdf6;box-shadow:0 4px 16px #344c360b}
+.candidate-option-card.screen-suitable{border-top:4px solid #627d4b}
+.candidate-option-card.screen-marginal{border-top:4px solid #b98537}
+.candidate-option-card.screen-unsuitable{border-top:4px solid #a85846}
+.candidate-option-card.screen-insufficient_data,.candidate-option-card.screen-unassessed{border-top:4px solid #8b9378}
+.candidate-option-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.candidate-option-heading h2{font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:1.3;font-weight:500;margin:0 0 4px}
+.candidate-option-heading h2 span{font-family:inherit;font-size:14px;color:#5a6947}
+.candidate-option-heading i{font-size:12px;color:#667354}
+.candidate-status{flex:0 0 auto;max-width:42%;padding:5px 8px;border-radius:13px;background:#edf0e3;color:#4b5e3d;font-size:10px;font-weight:750;line-height:1.4;text-align:center}
+.candidate-status.suitable{background:#e5eedc;color:#375a34}
+.candidate-status.marginal{background:#f4ead5;color:#755326}
+.candidate-status.unsuitable{background:#f2e3dd;color:#7a4036}
+.candidate-option-card .candidate-tags-row{gap:6px}
+.candidate-option-card .info-chip{font-size:10.5px}
+.candidate-option-card>p{margin:0;font-size:13px!important;line-height:1.65!important}
+.candidate-option-screening{display:grid;gap:8px;padding:12px;border-radius:13px;background:#f0f2e6;font-size:12px;line-height:1.6}
+.candidate-option-screening>p{display:flex;gap:7px;align-items:flex-start;margin:0;font-size:12px!important;line-height:1.6!important}
+.candidate-option-screening>p svg{flex:0 0 auto;margin-top:3px}
+.candidate-option-screening small{color:#59664a;line-height:1.6}
+.candidate-option-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:5px}
+.candidate-option-actions .secondary-button{min-height:40px;padding:9px 14px;font-size:12px}
+.candidate-option-actions .text-button{font-size:12px}
+.candidate-option-actions label{display:flex;align-items:center;gap:6px;min-height:40px;margin-left:auto;font-size:12px;font-weight:650}
+.candidate-option-actions input{width:18px;height:18px;accent-color:#405e36}
+.candidate-full-profile{margin-top:24px}
+.candidate-full-profile h3{margin:20px 0 8px;font-size:17px}
+.candidate-full-profile .candidate-assessment>strong:not(:first-child){display:block;margin-top:12px}
+.candidate-compare table{min-width:560px}
+.candidate-compare td,.candidate-compare th{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:760px){.evidence-result,.candidate-card{padding:19px}.candidate-controls{grid-template-columns:1fr}.evidence-key-metrics{gap:16px}.evidence-key-metrics strong{font-size:28px}.evidence-key-metrics .evidence-text-metric{font-size:21px}.evidence-result dl>div,.candidate-details dl>div,.agronomy-review dl>div{grid-template-columns:1fr;gap:4px}}
+@media(max-width:359px){.field-evidence-scene>.lesson-tabs{gap:5px}.evidence-key-metrics{grid-template-columns:1fr}.evidence-result,.candidate-card{padding:16px}.evidence-result h2,.candidate-card h2{font-size:23px}.brand-logo-img{width:22px;height:22px}}
+@media(max-width:760px){.field-terrain-glance{left:10px;top:330px;width:min(240px,calc(100vw - 20px));padding:12px}.candidate-option-grid{grid-template-columns:1fr}.candidate-option-card{padding:16px}.candidate-option-heading{gap:8px}.candidate-option-heading h2{font-size:19px}.candidate-option-actions label{margin-left:0}}

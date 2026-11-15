@@ -99,8 +99,15 @@ async def observations_status(
     lon: float = Query(ge=-180, le=180, allow_inf_nan=False),
 ):
     """Reports operational status across all earth observation providers for a point."""
+    from app.ingestion.store import ObservationStore, MODIS
+    from app.ml.predictor import model_status
+    from app.providers.modis import seed_rows
+    store = ObservationStore()
+    modis_available = bool(store.latest(MODIS, lat, lon) or seed_rows(lat, lon))
     loc = await location_service.identify_location(lat, lon)
     return {
+        "ingestion_sync": store.sync_status(lat, lon),
+        "adaptive_ml": model_status(lat, lon),
         "lat": lat,
         "lon": lon,
         "country": loc.country_name,
@@ -108,6 +115,7 @@ async def observations_status(
         "region": loc.region,
         "providers": {
             "nasa_power": "operational",
+            "nasa_modis_vi": "data_available" if modis_available else "unavailable",
             "soilgrids": soil_service.metadata.status.value,
             "copernicus_era5": era5_service.metadata.status.value,
             "senamhi_peru": "active" if loc.country_code == "PE" else "disabled_outside_peru",

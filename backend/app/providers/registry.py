@@ -23,6 +23,7 @@ from app.providers.faostat import FAOSTATService
 from app.providers.era5 import ERA5Service
 from app.providers.senamhi import SENAMHIService
 from app.providers.elevation import ElevationService
+from app.providers.modis import MODISService
 
 
 class ProviderOverview(BaseModel):
@@ -72,6 +73,7 @@ class DataProviderRegistry:
 
         # Future NASA collection placeholders (registered as inactive/extensible)
         self._register_future_nasa_stubs()
+        self.register(MODISService())
 
     def _register_future_nasa_stubs(self):
         stubs = [
@@ -100,19 +102,6 @@ class DataProviderRegistry:
                 status=ProviderStatus.DISABLED,
                 enabled=False,
                 limitations=["Architecture prepared for Earthdata SMAP L3/L4 soil moisture integration."],
-            ),
-            ProviderMetadata(
-                id="nasa_modis_vi",
-                name="NASA MODIS MOD13Q1 Vegetation Indices (NDVI/EVI)",
-                organization="NASA LP DAAC / USGS",
-                source_type=DataSourceType.SATELLITE_VEGETATION,
-                description="16-day composite Normalized Difference Vegetation Index at 250 m.",
-                documentation_url="https://doi.org/10.5067/MODIS/MOD13Q1.061",
-                spatial_resolution="250 m sinusoidal grid",
-                temporal_resolution="16-day composites",
-                status=ProviderStatus.CONFIGURED,  # Registered in architecture; ingestion not yet active
-                enabled=True,
-                limitations=["Pilot regions with verified ingestion; unconfigured regions report unavailable."],
             ),
         ]
         for stub in stubs:

@@ -1,0 +1,21 @@
+{
+  "source": "NASA MODIS MOD13Q1.061 / ORNL DAAC",
+  "doi": "https://doi.org/10.5067/MODIS/MOD13Q1.061",
+  "lat": -12.05,
+  "lon": -75.2,
+  "retrieved_at": "2026-11-15T18:18:16.687315+00:00",
+  "raw_sha256": "93f1a60d8395356566c935e8fecdf6aeb5bfc676eb28fecc6ee904dbda1f59b7",
+  "request_urls": [
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2023001&endDate=A2023144&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2023145&endDate=A2023288&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2023289&endDate=A2024067&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2024068&endDate=A2024211&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2024212&endDate=A2024355&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2024356&endDate=A2025133&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2025134&endDate=A2025277&kmAboveBelow=0&kmLeftRight=0",
+    "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.05&longitude=-75.2&startDate=A2025278&endDate=A2025365&kmAboveBelow=0&kmLeftRight=0"
+  ],
+  "composite_count": 69,
+  "valid_ndvi_count": 59,
+  "normalization": "Raw values unchanged; one central pixel, QA 0/1 retained, scale .0001. See app/clients/modis.py."
+}

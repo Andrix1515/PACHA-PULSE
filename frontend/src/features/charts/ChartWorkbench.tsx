@@ -4,9 +4,10 @@ import type { ChartArtifact, ChartSpec, ClimateReference, ComparisonInput } from
 import { requestJson } from '../../services/api'
 import ChartCard from './ChartCard'
 
-interface Props { climate: ClimateReference | null; comparison: ComparisonInput | null; charts: ChartArtifact[]; onAdd: (charts: ChartArtifact[]) => void; onRemove: (id: string) => void; onAsk: (spec: ChartSpec) => void; onClimate: () => void; onPlanning: () => void }
+interface Props { guided?: boolean; climate: ClimateReference | null; comparison: ComparisonInput | null; charts: ChartArtifact[]; onAdd: (charts: ChartArtifact[]) => void; onRemove: (id: string) => void; onAsk: (spec: ChartSpec) => void; onClimate: () => void; onPlanning: () => void }
 
-export default function ChartWorkbench({ climate, comparison, charts, onAdd, onRemove, onAsk, onClimate, onPlanning }: Props) {
+export default function ChartWorkbench({ guided = false, climate, comparison, charts, onAdd, onRemove, onAsk, onClimate, onPlanning }: Props) {
+  const [selectedChart, setSelectedChart] = useState(0)
   const [spec, setSpec] = useState<ChartSpec>({ metric: 'rainfall', chart_type: 'bar', aggregation: 'daily' })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
@@ -19,7 +20,7 @@ export default function ChartWorkbench({ climate, comparison, charts, onAdd, onR
     setPending(true); setError('')
     try {
       const chart = await requestJson<ChartArtifact>('/assistant/charts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify({ spec, climate, comparison }) })
-      if (!controller.signal.aborted) onAdd([chart])
+      if (!controller.signal.aborted) { onAdd([chart]); setSelectedChart(0) }
     } catch (caught) { if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : 'The chart could not be prepared.') }
     finally { if (!controller.signal.aborted) setPending(false) }
   }
@@ -32,6 +33,7 @@ export default function ChartWorkbench({ climate, comparison, charts, onAdd, onR
       {error && <p className="field-error" role="alert">{error}</p>}
     </section>
     <p className="chart-library-note" role="status">{charts.length ? `${charts.length} of 6 chart snapshots in this session. Their source and period stay fixed when you change the field. Export to keep a copy.` : 'Your prepared charts will appear here. Start with NASA climate if you do not have observations yet.'}</p>
-    <div className="chart-library">{charts.map((chart) => <ChartCard chart={chart} key={chart.id} onRemove={() => onRemove(chart.id)} />)}</div>
+    {guided && charts.length > 1 && <div className="chart-snapshot-picker" role="group" aria-label="Prepared chart snapshots">{charts.map((chart, index) => <button key={chart.id} aria-pressed={index === Math.min(selectedChart, charts.length - 1)} onClick={() => setSelectedChart(index)}>{index + 1}. {chart.title}</button>)}</div>}
+    <div className="chart-library">{(guided ? charts.slice(Math.min(selectedChart, charts.length - 1), Math.min(selectedChart, charts.length - 1) + 1) : charts).map((chart) => <ChartCard chart={chart} key={chart.id} onRemove={() => onRemove(chart.id)} />)}</div>
   </div>
 }

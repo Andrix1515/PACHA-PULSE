@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-11-15T19:51:30.887Z",
+  "fixture": false,
+  "point": {
+    "lat": -12.0465,
+    "lon": -75.1958
+  },
+  "period": {
+    "start": "2023-01-01",
+    "end": "2025-12-31"
+  },
+  "source": "NASA MODIS MOD13Q1.061 via ORNL DAAC",
+  "job": {
+    "id": 3,
+    "status": "complete",
+    "requested_at": "2026-11-15T19:46:39.888562+00:00",
+    "finished_at": "2026-11-15T19:51:29.752306+00:00",
+    "error": null,
+    "completed_batches": 8,
+    "total_batches": 8
+  },
+  "composites": 69,
+  "summary": {
+    "ndvi_mean": 0.22945409836065575,
+    "ndvi_min": 0.138,
+    "ndvi_max": 0.4151,
+    "valid_composites_count": 61,
+    "cloudy_composites_count": 8
+  },
+  "first": {
+    "date": "2023-01-01",
+    "period_end": "2023-01-16",
+    "ndvi": 0.2522,
+    "evi": 0.196,
+    "pixel_reliability": 1,
+    "quality": "marginal",
+    "status": "observed",
+    "source": "NASA MODIS MOD13Q1.061 via ORNL DAAC",
+    "tile": "h10v10",
+    "retrieved_at": "2026-11-15T19:47:16.213533+00:00",
+    "request_url": "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.0465&longitude=-75.1958&startDate=A2023001&endDate=A2023144&kmAboveBelow=0&kmLeftRight=0"
+  },
+  "last": {
+    "date": "2025-12-19",
+    "period_end": "2026-01-03",
+    "ndvi": 0.1813,
+    "evi": 0.1134,
+    "pixel_reliability": 0,
+    "quality": "good",
+    "status": "observed",
+    "source": "NASA MODIS MOD13Q1.061 via ORNL DAAC",
+    "tile": "h10v10",
+    "retrieved_at": "2026-11-15T19:51:29.719704+00:00",
+    "request_url": "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=-12.0465&longitude=-75.1958&startDate=A2025305&endDate=A2025365&kmAboveBelow=0&kmLeftRight=0"
+  },
+  "browser_errors": []
+}

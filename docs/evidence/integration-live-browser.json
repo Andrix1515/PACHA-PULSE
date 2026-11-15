@@ -1,0 +1,23 @@
+{
+  "verified_at": "2026-11-15T14:53:16.906Z",
+  "path": "Browser -> Vite proxy -> FastAPI -> unchanged main providers -> real external services -> guided evidence scene",
+  "health": {
+    "status": "ok",
+    "service": "agroshift-api",
+    "version": "0.1.0"
+  },
+  "catalogue_count": 21,
+  "gemini_configured": false,
+  "soil": {
+    "ph_mean": 6.34,
+    "quality": "modeled",
+    "source": "ISRIC SoilGrids 250 m v2.0 — WCS 2.0.1 (maps.isric.org)",
+    "displayed": "Profile mean pH\n6.34\nTexture class\nclay loam"
+  },
+  "terrain": {
+    "elevation_m": 3296,
+    "slope_percent": 8.3,
+    "source": "Copernicus DEM 90m / SRTM via Open-Meteo"
+  },
+  "profile_soil_remains": "unknown"
+}

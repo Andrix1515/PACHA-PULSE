@@ -74,7 +74,7 @@ async def get_candidate_crops(
     temp_mean = None
     rain_total = None
     if start and end:
-        key = f"{round(lat, 3)},{round(lon, 3)},{start},{end}"
+        key = cache_key(lat, lon, start, end)
         obs = climate_cache.get(key)
         if obs and "summary" in obs:
             temp_mean = obs["summary"]["temperature_mean"].get("value")

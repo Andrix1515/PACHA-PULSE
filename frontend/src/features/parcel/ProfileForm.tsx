@@ -29,6 +29,6 @@ export default function ProfileForm({ profile, onSave }: { profile: Agricultural
       {error && <p className="field-error" role="alert" id="profile-error">{error}</p>}
       <button type="submit" className="secondary-button w-full"><Check size={17} />Save profile</button>
       {message && <p className="save-message" role="status">{message}</p>}
-    </form><p className="profile-footnote">Your input, without agronomic verification. Profile details clear when you reload. Export a report to keep them.</p>
+    </form><p className="profile-footnote">Your input, without agronomic verification. Profile details are remembered in this tab. Export a report to keep a separate copy.</p>
   </section>
 }

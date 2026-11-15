@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import type { FormEvent, KeyboardEvent } from 'react'
+import type { FormEvent } from 'react'
 import { divIcon, DomEvent } from 'leaflet'
 import type { Map as LeafletMap } from 'leaflet'
 import { CircleMarker, MapContainer, Marker, Polygon, Polyline, ScaleControl, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
-import type { Location, UserRole } from '../../types'
+import PlaceSearch from './PlaceSearch'
+import CoordinateForm from '../parcel/CoordinateForm'
+import type { Location, TerrainInfo, UserRole } from '../../types'
 import { containsPoint, createBoundary, importBoundary, MAX_MAP_LAT, MAX_VERTICES, parseCoordinate, representativePoint, validateVertex, verticesOf } from '../parcel/geometry'
 import type { ParcelBoundary, Vertex } from '../parcel/geometry'
-
-// ── tile layer definitions ───────────────────────────────────────────────────
 
 type LayerId = 'street' | 'satellite' | 'terrain'
 
@@ -43,254 +43,6 @@ const TILE_LAYERS: TileLayerDef[] = [
   },
 ]
 
-// ── Layer Switcher (floating, top-right, inside map) ─────────────────────────
-
-function LayerSwitcher({ active, onChange }: { active: LayerId; onChange: (id: LayerId) => void }) {
-  return (
-    <div
-      className="layer-switcher"
-      style={{
-        position: 'absolute',
-        top: 10,
-        right: 10,
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        background: 'rgba(255,255,255,0.95)',
-        border: '1px solid #ccc',
-        borderRadius: 6,
-        padding: '4px 6px',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <span style={{ fontSize: '0.65em', fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Layer</span>
-      {TILE_LAYERS.map((layer) => (
-        <button
-          key={layer.id}
-          type="button"
-          onClick={() => onChange(layer.id)}
-          aria-pressed={active === layer.id}
-          style={{
-            fontSize: '0.78em',
-            padding: '3px 7px',
-            borderRadius: 4,
-            border: active === layer.id ? '2px solid #244a38' : '1px solid #aaa',
-            background: active === layer.id ? '#244a38' : '#f8f8f8',
-            color: active === layer.id ? '#fff' : '#333',
-            cursor: 'pointer',
-            fontWeight: active === layer.id ? 700 : 400,
-            lineHeight: 1.3,
-          }}
-        >
-          {layer.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// ── Geolocation button (bottom-left inside map) ───────────────────────────────
-
-function GeolocationButton({ onSelect }: { onSelect: (location: Location) => void }) {
-  const map = useMap()
-  const [geoError, setGeoError] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  function locate() {
-    if (!navigator.geolocation) { setGeoError('Geolocation not supported by this browser.'); return }
-    setBusy(true)
-    setGeoError('')
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setBusy(false)
-        const lat = Number(pos.coords.latitude.toFixed(7))
-        const lon = Number(pos.coords.longitude.toFixed(7))
-        if (Math.abs(lat) > MAX_MAP_LAT) { setGeoError('Polar coordinates cannot be displayed.'); return }
-        map.setView([lat, lon], Math.max(map.getZoom(), 13), { animate: true })
-        onSelect({ lat, lon, source: 'map' })
-      },
-      (err) => {
-        setBusy(false)
-        if (err.code === err.PERMISSION_DENIED) setGeoError('Location permission denied.')
-        else setGeoError('Could not obtain location.')
-      },
-      { timeout: 10000, maximumAge: 60000 }
-    )
-  }
-
-  return (
-    <>
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 32,
-          left: 10,
-          zIndex: 1000,
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={locate}
-          disabled={busy}
-          aria-label="Use my current location"
-          title="Use my current location"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 6,
-            border: '1px solid #aaa',
-            background: '#fff',
-            cursor: busy ? 'wait' : 'pointer',
-            fontSize: '1.1em',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-          }}
-        >
-          {busy ? '…' : '📍'}
-        </button>
-      </div>
-      {geoError && (
-        <div
-          role="alert"
-          style={{
-            position: 'absolute',
-            bottom: 72,
-            left: 10,
-            zIndex: 1000,
-            background: '#fff3cd',
-            border: '1px solid #f0ad4e',
-            borderRadius: 4,
-            padding: '3px 7px',
-            fontSize: '0.78em',
-            maxWidth: 220,
-            pointerEvents: 'none',
-          }}
-        >
-          {geoError}
-        </div>
-      )}
-    </>
-  )
-}
-
-// ── Place Search bar (top, full-width) ────────────────────────────────────────
-
-function PlaceSearch({ onSelect }: { onSelect: (location: Location) => void }) {
-  const map = useMap()
-  const [query, setQuery] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [notFound, setNotFound] = useState(false)
-
-  async function search(e: FormEvent) {
-    e.preventDefault()
-    const q = query.trim()
-    if (!q) return
-    setBusy(true)
-    setNotFound(false)
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&limit=1`
-      const res = await fetch(url, { headers: { Accept: 'application/json' } })
-      const data: { lat: string; lon: string }[] = await res.json()
-      if (!data.length) { setNotFound(true); return }
-      const lat = parseFloat(data[0].lat)
-      const lon = parseFloat(data[0].lon)
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) { setNotFound(true); return }
-      map.flyTo([lat, lon], Math.max(map.getZoom(), 11), { animate: true })
-      onSelect({ lat: Number(lat.toFixed(7)), lon: Number(lon.toFixed(7)), source: 'map' })
-    } catch {
-      setNotFound(true)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function handleKey(e: KeyboardEvent<HTMLInputElement>) {
-    // Let the form submit handle Enter
-    if (e.key === 'Escape') setQuery('')
-  }
-
-  return (
-    <form
-      onSubmit={search}
-      aria-label="Search for a place"
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        position: 'absolute',
-        top: 10,
-        left: 50,
-        right: 110,
-        zIndex: 1000,
-        display: 'flex',
-        gap: 4,
-      }}
-    >
-      <input
-        type="search"
-        placeholder="Search place…"
-        value={query}
-        onChange={(e) => { setQuery(e.target.value); setNotFound(false) }}
-        onKeyDown={handleKey}
-        aria-label="Place search"
-        style={{
-          flex: 1,
-          padding: '5px 8px',
-          borderRadius: 5,
-          border: '1px solid #aaa',
-          fontSize: '0.85em',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-          background: '#fff',
-        }}
-      />
-      <button
-        type="submit"
-        disabled={busy || !query.trim()}
-        style={{
-          padding: '5px 10px',
-          borderRadius: 5,
-          border: '1px solid #aaa',
-          background: '#244a38',
-          color: '#fff',
-          fontSize: '0.82em',
-          cursor: busy ? 'wait' : 'pointer',
-          whiteSpace: 'nowrap',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-        }}
-      >
-        {busy ? '…' : 'Search'}
-      </button>
-      {notFound && (
-        <span
-          role="status"
-          style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            marginTop: 2,
-            background: '#fff3cd',
-            border: '1px solid #f0ad4e',
-            borderRadius: 4,
-            padding: '2px 7px',
-            fontSize: '0.78em',
-            whiteSpace: 'nowrap',
-            zIndex: 1001,
-          }}
-        >
-          Not found
-        </span>
-      )}
-    </form>
-  )
-}
-
-// ── Map interaction (unchanged) ───────────────────────────────────────────────
 
 interface Props {
   location: Location | null
@@ -299,6 +51,12 @@ interface Props {
   onSaveBoundary: (boundary: ParcelBoundary | null) => void
   storageMessage: string
   role: UserRole
+  immersive?: boolean
+  onState?: (drawing: boolean, points: number) => void
+  onExplore?: () => void
+  onCrops?: () => void
+  onEvidence?: () => void
+  terrain?: TerrainInfo | null
 }
 
 function MapInteraction({ location, boundary, drawing, vertices, onClose, onAdd, onSelect, onView }: Props & { drawing: boolean; vertices: Vertex[]; onClose: () => void; onAdd: (vertex: Vertex) => void; onView: (center: Vertex, zoom: number) => void }) {
@@ -348,11 +106,11 @@ function VertexRow({ vertex, index, count, onUpdate, onRemove, onMove }: { verte
   </li>
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
 export default function LocationMap(props: Props) {
-  const { location, onSelect, boundary, onSaveBoundary, storageMessage, role } = props
+  const { location, onSelect, boundary, onSaveBoundary, storageMessage, role, immersive = false, onState, onExplore, onCrops, onEvidence, terrain } = props
   const mapRef = useRef<LeafletMap | null>(null)
+  const [activeLayer, setActiveLayer] = useState<LayerId>('street')
+  const currentTile = TILE_LAYERS.find((layer) => layer.id === activeLayer)!
   const [tileError, setTileError] = useState(false)
   const [drawing, setDrawing] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -363,14 +121,13 @@ export default function LocationMap(props: Props) {
   const [error, setError] = useState('')
   const [announcement, setAnnouncement] = useState('')
   const [view, setView] = useState({ lat: 12, lon: -12, zoom: 2 })
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const editor = useRef<HTMLDivElement>(null)
+  const [locating, setLocating] = useState(false)
+  useEffect(() => { onState?.(drawing, vertices.length) }, [drawing, vertices.length, onState])
   const [deleted, setDeleted] = useState<ParcelBoundary | null>(null)
-  const [activeLayer, setActiveLayer] = useState<LayerId>('street')
-
   useEffect(() => { setVertices(verticesOf(boundary)); setName(boundary?.properties.name || ''); setError('') }, [boundary])
   useEffect(() => { const frame = requestAnimationFrame(() => mapRef.current?.invalidateSize({ animate: false })); return () => cancelAnimationFrame(frame) }, [expanded])
-
-  const currentTile = TILE_LAYERS.find(l => l.id === activeLayer) ?? TILE_LAYERS[0]
-
   function add(vertex: Vertex) {
     try {
       validateVertex(vertex)
@@ -388,7 +145,7 @@ export default function LocationMap(props: Props) {
   function save() {
     try {
       const next = createBoundary(vertices, name)
-      onSaveBoundary(next); setDrawing(false); setDeleted(null); setError(''); requestAnimationFrame(() => document.getElementById('parcel-draw-toggle')?.focus()); setAnnouncement('Outline closed and saved. The query point is inside or on the field boundary.')
+      onSaveBoundary(next); setDrawing(false); setDeleted(null); setError(''); requestAnimationFrame(() => (immersive ? document.querySelector<HTMLButtonElement>('.field-quick-tools button[aria-pressed]') : document.getElementById('parcel-draw-toggle'))?.focus()); setAnnouncement('Outline closed and saved. The query point is inside or on the field boundary.')
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'The outline could not be closed.') }
   }
   function cancel() { setVertices(verticesOf(boundary)); setName(boundary?.properties.name || ''); setDrawing(false); setError(''); setAnnouncement('Draft changes discarded. The saved field is unchanged.') }
@@ -411,30 +168,101 @@ export default function LocationMap(props: Props) {
     } catch (caught) { setError(caught instanceof SyntaxError ? 'The file does not contain valid JSON.' : caught instanceof Error ? caught.message : 'The file could not be imported.') }
   }
   const outside = boundary && location && !containsPoint(boundary, location)
-  return <div className="parcel-map-editor">
+  useEffect(() => {
+    if (!immersive) return
+    let frame = 0
+    const observed = new Set<Element>()
+    const fit = () => {
+      const stack = editor.current?.querySelector<HTMLElement>('.map-context-stack')
+      if (!stack || !stack.getBoundingClientRect().width) return
+      let rect = stack.getBoundingClientRect()
+      const drawer = editor.current?.querySelector<HTMLElement>('.field-tools-drawer')
+      const companion = document.querySelector('.pacha-stage')?.getBoundingClientRect()
+      const confirmation = document.querySelector<HTMLElement>('.field-confirm-bar')
+      let confirm = confirmation?.getBoundingClientRect()
+      if (innerWidth > 760 && companion?.width && companion.left > rect.left + 260) {
+        stack.style.width = `${Math.min(610, Math.floor(companion.left - rect.left - 24))}px`
+        rect = stack.getBoundingClientRect()
+        if (confirmation && confirm) {
+          confirmation.style.maxWidth = `${Math.max(260, Math.floor(companion.left - confirm.left - 24))}px`
+          confirm = confirmation.getBoundingClientRect()
+        }
+      } else { stack.style.width = ''; if (confirmation) confirmation.style.maxWidth = '' }
+      if (drawer) {
+        if (toolsOpen) { drawer.style.top = ''; drawer.style.bottom = ''; drawer.style.width = ''; drawer.style.minWidth = '' }
+        else {
+          if (innerWidth <= 760) {
+            const left = drawer.getBoundingClientRect().left
+            const edges = Array.from(editor.current!.querySelectorAll('.leaflet-control-zoom, .leaflet-control-scale')).map((node) => node.getBoundingClientRect()).filter((box) => box.width && box.left > left)
+            const limit = Math.min(...edges.map((box) => box.left), innerWidth - 20)
+            drawer.style.width = `${Math.max(80, Math.min(200, Math.floor(limit - left - 14)))}px`
+            drawer.style.minWidth = '0'
+          } else { drawer.style.width = ''; drawer.style.minWidth = '' }
+          const box = drawer.getBoundingClientRect()
+          let lowerEdge = confirm?.top ? confirm.top - 14 : innerHeight - 110
+          if (companion?.width && companion.right > box.left && companion.left < box.right) lowerEdge = Math.min(lowerEdge, companion.top - 14)
+          drawer.style.top = `${Math.max(0, Math.floor(lowerEdge - box.height - editor.current!.getBoundingClientRect().top))}px`
+          drawer.style.bottom = 'auto'
+        }
+      }
+      const controls = editor.current?.querySelectorAll<HTMLElement>('.leaflet-top')
+      controls?.forEach((control) => {
+        if (!observed.has(control)) { observed.add(control); observer.observe(control) }
+        if (innerWidth <= 760 && !toolsOpen && drawer) {
+          const child = control.querySelector<HTMLElement>('.leaflet-control')
+          if (!child) return
+          if (!observed.has(child)) { observed.add(child); observer.observe(child) }
+          const row = drawer.getBoundingClientRect(), box = control.getBoundingClientRect(), visible = child.getBoundingClientRect()
+          const top = control.classList.contains('leaflet-left') ? row.bottom - (visible.bottom - box.top) : row.top + (row.height - visible.height) / 2 - (visible.top - box.top)
+          control.style.top = `${Math.max(0, Math.floor(top - editor.current!.getBoundingClientRect().top))}px`
+        } else control.style.top = ''
+      })
+      let bottom = innerHeight - 20
+      const obstacles = [editor.current?.querySelector('.field-tools-drawer'), document.querySelector('.field-confirm-bar'), document.querySelector('.pacha-stage')]
+      obstacles.forEach((node) => {
+        if (!node) return
+        if (!observed.has(node)) { observed.add(node); observer.observe(node) }
+        const box = node.getBoundingClientRect()
+        if (box.width && box.height && box.right > rect.left && box.left < rect.right && box.top > rect.top) bottom = Math.min(bottom, box.top - 14)
+      })
+      const height = `${Math.max(80, Math.floor(bottom - rect.top))}px`
+      if (stack.style.maxHeight !== height) stack.style.maxHeight = height
+      dispatchEvent(new Event('pacha:map-layout'))
+    }
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(fit) }
+    const observer = new ResizeObserver(schedule)
+    if (editor.current) observer.observe(editor.current)
+    const stack = editor.current?.querySelector('.map-context-stack'); if (stack) observer.observe(stack)
+    addEventListener('resize', schedule); addEventListener('scroll', schedule, { passive: true }); schedule()
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); removeEventListener('resize', schedule); removeEventListener('scroll', schedule) }
+  }, [immersive, toolsOpen, drawing])
+
+  function findLocation() {
+    if (!navigator.geolocation) { setError('Device location is unavailable. Use the map or Field tools to enter coordinates.'); setToolsOpen(true); return }
+    setLocating(true); setError('')
+    navigator.geolocation.getCurrentPosition((position) => { onSelect({ lat: position.coords.latitude, lon: position.coords.longitude, source: 'manual' }); setLocating(false); setAnnouncement('Device location selected. Check the point on the map before continuing.'); mapRef.current?.setView([position.coords.latitude, position.coords.longitude], 16, { animate: false }) }, () => { setLocating(false); setError('Location could not be accessed. You can still select your field on the map or enter coordinates in Field tools.') }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 })
+  }
+  return <div ref={editor} className={`parcel-map-editor ${immersive ? 'immersive-map' : ''}`}>
+    {immersive && <section className="map-context-stack" aria-label="Find and explore your field">
+      <div className="field-scene-title"><span className="eyebrow">A PLACE TO BEGIN</span><h1 id="field-scene-heading" tabIndex={-1}>Find your field.</h1></div>
+    {immersive && <PlaceSearch onChoose={(place) => { if (place.bounds) mapRef.current?.fitBounds(place.bounds, { padding: [70, 70], maxZoom: 13, animate: !matchMedia('(prefers-reduced-motion: reduce)').matches }); else mapRef.current?.setView([Math.max(-MAX_MAP_LAT, Math.min(MAX_MAP_LAT, place.lat)), place.lon], place.kind === 'country' ? 5 : 9, { animate: false }); setAnnouncement(`Browsing ${place.label}. Select your actual field to change the query point.`) }} />}
+    {immersive && <div className="field-quick-tools" role="group" aria-label="Field actions"><button type="button" onClick={findLocation} disabled={locating}>{locating ? 'Finding your location...' : 'Find my location'}</button><button type="button" aria-pressed={drawing} onClick={() => { setDrawing(!drawing); setAnnouncement(drawing ? 'Drawing paused. Your draft is preserved.' : 'Tap each corner, then tap point 1 to close your field.') }}>{drawing ? 'Pause drawing' : 'Draw my field'}</button>{drawing && <button type="button" disabled={!vertices.length} onClick={() => setVertices((current) => current.slice(0, -1))}>Undo point</button>}{!drawing && onExplore && <button type="button" disabled={!boundary} title={boundary ? 'Explore your saved outline' : 'Save an outline to explore it in 3D'} onClick={onExplore}>Explore in 3D</button>}{!drawing && onCrops && <button type="button" onClick={onCrops}>Crop guide</button>}</div>}
+    {immersive && !drawing && location && onEvidence && <details className="field-terrain-glance" aria-label="Terrain at selected point"><summary>Terrain summary</summary><div className="terrain-summary-content">
+      <div><span>Elevation</span><strong>{terrain?.elevation_m == null ? 'Not checked' : `${terrain.elevation_m.toFixed(0)} m`}</strong></div>
+      <div><span>Sampled slope</span><strong>{terrain?.slope_percent == null ? 'Not checked' : `${terrain.slope_percent.toFixed(1)}%`}</strong></div>
+      {terrain && <small>{terrain.provenance.spatial_resolution} · estimate, not a field survey</small>}
+      {!terrain && <small>Read DEM estimates for this point and outline.</small>}
+      <button type="button" onClick={onEvidence}>{terrain ? 'See terrain details' : 'Check terrain'} </button>
+    </div></details>}
+    </section>}
+    <div hidden={immersive}>
     <div className="map-toolbar" role="group" aria-label="Map tools"><button type="button" aria-pressed={!drawing} onClick={() => { setDrawing(false); setAnnouncement('Query point mode. Your draft is preserved.') }}>Choose query point</button><button id="parcel-draw-toggle" type="button" aria-pressed={drawing} onClick={() => { setDrawing(true); setAnnouncement('Drawing mode. Add points with clicks, taps, coordinates or the map center.') }}>Draw or edit field</button><button type="button" onClick={() => { setVertices([]); setName(''); setDrawing(true); setError(''); setAnnouncement('New draft. The saved field stays unchanged until you confirm its replacement.') }}>New outline</button><button type="button" onClick={() => setExpanded(!expanded)} aria-pressed={expanded}>{expanded ? 'Reduce map' : 'Expand map'}</button></div>
     <p className="map-instructions" id="map-help">{drawing ? 'Add corners in order. After three points, click or tap point 1 to close and save. You can also press Enter on point 1 or use Close and save field below.' : 'Click or tap to choose a query point. To outline your field, select Draw or edit field.'} Use arrow keys and +/− on the map to navigate. Every action also has an external control.</p>
+    </div>
     <div className={`map-frame ${expanded ? 'map-expanded' : ''} ${drawing ? 'drawing-mode' : ''}`} role="region" aria-label="World map for selecting a location" aria-describedby="map-help" onKeyDown={(event) => { if (event.key === 'Escape' && drawing) { setDrawing(false); setAnnouncement('Drawing paused. Your draft is preserved.') } }}>
       <MapContainer ref={mapRef} center={[12, -12]} zoom={2} minZoom={2} maxZoom={19} zoomControl={false} scrollWheelZoom={false} worldCopyJump maxBounds={[[-MAX_MAP_LAT, -Infinity], [MAX_MAP_LAT, Infinity]]}>
-        <TileLayer
-          key={activeLayer}
-          url={currentTile.url}
-          maxNativeZoom={currentTile.maxNativeZoom}
-          maxZoom={19}
-          attribution={currentTile.attribution}
-          eventHandlers={{ tileerror: () => setTileError(true) }}
-        />
-        <ZoomControl position="topleft" zoomInTitle="Zoom in" zoomOutTitle="Zoom out" /><ScaleControl position="bottomleft" imperial={false} />
-
-        {/* Layer switcher — floating top-right */}
-        <LayerSwitcher active={activeLayer} onChange={setActiveLayer} />
-
-        {/* Place search bar — floating top-centre */}
-        <PlaceSearch onSelect={onSelect} />
-
-        {/* Geolocation button — floating bottom-left */}
-        <GeolocationButton onSelect={onSelect} />
-
+        <TileLayer key={activeLayer} url={currentTile.url} maxNativeZoom={currentTile.maxNativeZoom} maxZoom={19} attribution={currentTile.attribution} eventHandlers={{ tileerror: () => setTileError(true) }} />
+        <ZoomControl position="topleft" zoomInTitle="Zoom in" zoomOutTitle="Zoom out" /><ScaleControl position={immersive ? "topright" : "bottomleft"} imperial={false} />
         <MapInteraction {...props} drawing={drawing} vertices={vertices} onClose={save} onAdd={add} onView={(center, zoom) => setView({ ...center, zoom })} />
         {boundary && <Polygon positions={verticesOf(boundary).map((vertex) => [vertex.lat, vertex.lon])} pathOptions={{ color: '#244a38', fillColor: '#a9c681', fillOpacity: drawing ? .08 : .23, weight: 3 }} interactive={false} />}
         {drawing && vertices.length >= 2 && <Polyline positions={vertices.map((vertex) => [vertex.lat, vertex.lon])} pathOptions={{ color: '#a05223', weight: 3, dashArray: '6 5' }} interactive={false} />}
@@ -442,6 +270,12 @@ export default function LocationMap(props: Props) {
       </MapContainer>
       <span className="map-center-crosshair" aria-hidden="true">+</span>
     </div>
+    <details className={immersive ? 'field-tools-drawer' : 'plain-map-tools'} open={immersive ? toolsOpen : true} onToggle={(event) => { if (immersive) setToolsOpen(event.currentTarget.open) }}>
+    <summary>{immersive ? 'Field tools' : 'Coordinates and outline tools'}</summary><div className="field-tools-content">
+    {immersive && <div className="map-toolbar"><button type="button" onClick={() => { setVertices([]); setName(''); setDrawing(true); setError(''); setAnnouncement('New draft. Your saved outline stays unchanged until you save a replacement.') }}>New outline</button><button type="button" onClick={() => { setDrawing(true); setAnnouncement('Edit the saved outline with points or coordinates.') }}>Draw or edit field</button><button type="button" onClick={() => { setDrawing(false); setAnnouncement('Choose a query point on the map.') }}>Choose query point</button></div>}
+    {<label className="map-layer-selector">Map layer<select value={activeLayer} onChange={(event) => { setActiveLayer(event.target.value as LayerId); setTileError(false) }}>{TILE_LAYERS.map((layer) => <option key={layer.id} value={layer.id}>{layer.label}</option>)}</select></label>}
+    {immersive && onEvidence && <button type="button" className="secondary-button" disabled={!location} onClick={onEvidence}>Soil & terrain</button>}
+    <CoordinateForm location={location} onSelect={onSelect} />
     <div className="map-toolbar" role="group" aria-label="Map navigation and detail"><button type="button" onClick={() => mapRef.current?.setView([12, -12], 2, { animate: false })}>World view</button><button type="button" disabled={!location} onClick={() => location && mapRef.current?.setView([Math.max(-MAX_MAP_LAT, Math.min(MAX_MAP_LAT, location.lat)), location.lon], 16, { animate: false })}>Zoom to point</button><button type="button" disabled={!boundary && vertices.length < 2} onClick={() => { const points = drawing && vertices.length >= 2 ? vertices : verticesOf(boundary); if (points.length >= 2) mapRef.current?.fitBounds(points.map((vertex) => [vertex.lat, vertex.lon]), { padding: [35, 35], maxZoom: 18, animate: false }) }}>Fit field</button>{drawing && <button type="button" onClick={() => { const point = mapRef.current?.getCenter(); if (point) add({ lat: Number(point.lat.toFixed(7)), lon: Number(point.lng.toFixed(7)) }) }}>Add map center as a point</button>}</div>
     {drawing && vertices.length >= 3 && <p className="close-outline-hint">Ready to close: click the green point 1, or focus it and press Enter. The same validation runs before saving.</p>}
     <p className="map-view-status" role="status">Center: {view.lat.toFixed(6)}°, {view.lon.toFixed(6)}° · Zoom {view.zoom} · WGS84</p>
@@ -455,8 +289,9 @@ export default function LocationMap(props: Props) {
       <ol className="vertex-list" aria-label="Editable outline vertices">{vertices.map((vertex, index) => <VertexRow key={index} index={index} count={vertices.length} vertex={vertex} onUpdate={(next) => { setVertices((current) => current.map((value, i) => i === index ? next : value)); setError(''); setAnnouncement(`Point ${index + 1} updated.`) }} onRemove={() => removeVertex(index)} onMove={(direction) => { setVertices((current) => { const next = [...current]; [next[index], next[index + direction]] = [next[index + direction], next[index]]; return next }); setAnnouncement(`Point ${index + 1} reordered.`) }} />)}</ol><div className="map-toolbar"><button type="button" disabled={!vertices.length} onClick={() => { setVertices((current) => current.slice(0, -1)); setError(''); setAnnouncement('Last draft point removed.') }}>Remove last point</button><button type="button" className="primary-button" onClick={save}>Close and save field</button><button type="button" onClick={cancel}>Cancel outline changes</button></div>
     </section>}
     <div className="parcel-import"><label>Import field GeoJSON<input type="file" accept=".geojson,.json,application/geo+json,application/json" onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = '' }} /></label><p>One active field per browser. Only the outline is saved, not the agricultural profile. Export it before importing another area.</p></div>
+    </div></details>
     {error && <p className="field-error" role="alert">{error}</p>}
     {storageMessage && <p className="map-announcement" role="status">{storageMessage}</p>}
-    <p className="map-announcement" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
+    <p className={`map-announcement ${immersive ? 'sr-only' : ''}`} role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </div>
 }

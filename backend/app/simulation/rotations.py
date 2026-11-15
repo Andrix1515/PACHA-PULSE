@@ -14,6 +14,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.clients.power import validate_period
+from app.simulation.economics import EconomicInputs,budget
 from app.data.climate_schemas import Metric
 from app.crops.catalog import CROPS_CATALOG, get_crop_by_id
 from app.crops.models import BotanicalFamily, CropCategory, NutrientDemandLevel, RootDepthClass
@@ -66,6 +67,7 @@ class ClimateScenarioConfig(BaseModel):
 
 
 class CompareRequest(BaseModel):
+    economic_inputs: EconomicInputs | None = None
     model_config = ConfigDict(extra="forbid")
     rotations: list[Rotation] = Field(min_length=2, max_length=5)
     rainfall_percent: int = Field(default=100, ge=0, le=150)
@@ -97,6 +99,9 @@ class SequenceCalendarStep(BaseModel):
 
 
 class SequenceAgronomicAssessment(BaseModel):
+    pesticide_dependency_reduction: Literal["high", "moderate", "low"] = "low"
+    ipm_reduction_limitations: str = "Rotation/cover opportunity only; actual pesticide reduction requires local pest records and integrated pest management review."
+    synthetic_fertilizer_offset_kg_n_ha: None = None
     family_repetition_count: int
     solanaceae_repetition: bool
     poaceae_repetition: bool
@@ -130,6 +135,7 @@ class RotationResult(BaseModel):
 
 
 class CompareResponse(BaseModel):
+    economic_summary: dict | None = None
     results: list[RotationResult]
     scenario_rainfall: Metric
     baseline_rainfall: Metric | None
@@ -289,6 +295,7 @@ def evaluate_sequence_agronomy(
     seq_score = max(15, min(100, score))
 
     return SequenceAgronomicAssessment(
+        pesticide_dependency_reduction="high" if family_repeats == 0 and cover_rating == "high" else "moderate" if family_repeats == 0 else "low",
         family_repetition_count=family_repeats,
         solanaceae_repetition=solanaceae_repeat,
         poaceae_repetition=poaceae_repeat,
@@ -391,6 +398,7 @@ def compare(request: CompareRequest, rainfall: dict | None = None) -> CompareRes
         warnings.append(f"Simulating a hypothetical temperature change of {request.temperature_delta_c:+.1f} °C. This is a sensitivity stress test, not a regional climate projection.")
 
     return CompareResponse(
+        economic_summary=budget(request.economic_inputs) if request.economic_inputs else None,
         results=results,
         scenario_rainfall=Metric.model_validate(scenario),
         baseline_rainfall=Metric.model_validate(rainfall) if rainfall else None,

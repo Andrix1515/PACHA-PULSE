@@ -1,842 +1,147 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import {
-  ArrowDownToLine,
-  ArrowRight,
-  Check,
-  CloudSun,
-  FileText,
-  Globe,
-  House,
-  Info,
-  ChartNoAxesCombined,
-  MapPinned,
-  Menu,
-  Route,
-  Sprout,
-  X,
-  CircleHelp,
-} from 'lucide-react'
-import ApiStatus from '../components/ApiStatus'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, Leaf, MapPin, Sprout, X } from 'lucide-react'
 import LocationMap from '../features/map/LocationMap'
-import CoordinateForm from '../features/parcel/CoordinateForm'
-import ProfileForm from '../features/parcel/ProfileForm'
-import { useClimate } from './useClimate'
 import RotationPlanner from '../features/rotations/RotationPlanner'
 import ProjectPage from '../features/project/ProjectPage'
 import PachaCompanion from '../features/assistant/PachaCompanion'
-import CropExplorer from '../features/crops/CropExplorer'
+import JourneyMenu from '../features/journey/JourneyMenu'
+import PachaStage from '../features/journey/PachaStage'
+import CropGuide from '../features/crops/CropGuide'
+import ProfileScene from '../features/journey/ProfileScene'
+import { guidanceFor, initialProfile, readJourney, saveJourney, sceneFromHash, scenes } from '../features/journey/journey'
+import type { LessonTopic, Scene } from '../features/journey/journey'
+import { useFieldEvidence } from '../features/evidence/useFieldEvidence'
+import type { EvidenceTab } from '../features/evidence/useFieldEvidence'
+import { useClimate } from './useClimate'
 import { useParcelBoundary } from '../features/parcel/useParcelBoundary'
-import { representativePoint, verticesOf } from '../features/parcel/geometry'
-import { getLocationInfo, getSoilProfile, getLocationProviders, getTerrain } from '../services/api'
-import FieldAnalysisPanel from '../features/parcel/FieldAnalysisPanel'
-import type {
-  AgriculturalProfile,
-  AppView,
-  AssistantProposal,
-  ChartArtifact,
-  ClimateResponse,
-  ComparisonInput,
-  CompareResponse,
-  Location,
-  LocationInfo,
-  LocationProvidersReport,
-  SoilProfile,
-  TerrainInfo,
-  UserRole,
-} from '../types'
+import { containsPoint, representativePoint } from '../features/parcel/geometry'
+import type { AppView, AgriculturalProfile, AssistantProposal, ChartArtifact, ClimateResponse, ComparisonInput, CompareResponse, Location, UserRole, Crop, VegetationResponse, NdviPredictionResponse } from '../types'
+import type { AppliedFieldSimulation } from '../features/field3d/FieldExplorer'
+import type { ParcelSimulationSummary } from '../features/field3d/fieldSimulation'
+import '../features/journey/journey.css'
+import '../features/journey/depth.css'
+import '../features/journey/integration.css'
+import '../features/journey/clarity.css'
 
-const initialProfile: AgriculturalProfile = {
-  name: '',
-  crop: '',
-  areaHa: null,
-  soil: 'unknown',
-  water: 'unknown',
-  previousRotation: '',
-}
-
-const ClimatePanel = lazy(() => import('../features/monitoring/ClimatePanel'))
+const FieldEvidenceScene = lazy(() => import('../features/evidence/FieldEvidenceScene'))
+const CandidateScene = lazy(() => import('../features/crops/CandidateScene'))
+const FieldExplorer = lazy(() => import('../features/field3d/FieldExplorer'))
+const ClimateScene = lazy(() => import('../features/journey/ClimateScene'))
 const ChartWorkbench = lazy(() => import('../features/charts/ChartWorkbench'))
-
-const modules = [
-  { id: 'overview', hash: '#demo', title: 'Overview', Icon: House, description: 'Your next step, in one place.' },
-  { id: 'parcel', hash: '#field', title: 'My field', Icon: MapPinned, description: 'Find your field, draw its outline and identify soil.' },
-  { id: 'crops', hash: '#crops', title: 'Crop explorer', Icon: Sprout, description: 'Explore agro-ecological candidate crops tailored to your land.' },
-  { id: 'monitoring', hash: '#climate', title: 'NASA climate', Icon: CloudSun, description: 'Understand past rainfall and temperature at your query point.' },
-  { id: 'planning', hash: '#rotations', title: 'Rotation planner', Icon: Route, description: 'Explore three planting sequences and a rainfall scenario.' },
-  { id: 'charts', hash: '#charts', title: 'Charts', Icon: ChartNoAxesCombined, description: 'Turn your available observations and rotation counts into readable charts.' },
-  { id: 'reports', hash: '#reports', title: 'Reports', Icon: FileText, description: 'Review and export your field context and available results.' },
-  { id: 'help', hash: '#help', title: 'Help & sources', Icon: CircleHelp, description: 'Learn the workflow, sources and what the demo can tell you.' },
-] as const
-
-function route(): AppView | null {
-  const hash = window.location.hash
-  return (
-    modules.find((module) => module.hash === hash)?.id ??
-    (hash === '#main'
-      ? 'overview'
-      : hash === '#monitorear'
-      ? 'monitoring'
-      : hash === '#planificar'
-      ? 'planning'
-      : hash === '#cultivos'
-      ? 'crops'
-      : null)
-  )
-}
-
-export function climateReference(climate: ClimateResponse | null) {
-  return climate
-    ? {
-        lat: climate.lat,
-        lon: climate.lon,
-        start: climate.start,
-        end: climate.end,
-        saved_example: climate.delivery === 'saved_observation',
-      }
-    : null
-}
-
-function downloadJson(value: unknown) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'pacha-pulse-report.json'
-  link.click()
-  URL.revokeObjectURL(url)
-}
+export function climateReference(climate: ClimateResponse | null) { return climate ? { lat: climate.lat, lon: climate.lon, start: climate.start, end: climate.end, saved_example: climate.delivery === 'saved_observation' } : null }
+function downloadJson(value: unknown) { const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'pacha-pulse-report.json'; anchor.click(); URL.revokeObjectURL(url) }
 
 export default function App() {
-  const [view, setView] = useState<AppView | null>(route)
-  const [mobileMenu, setMobileMenu] = useState(false)
-  const [companionOpen, setCompanionOpen] = useState(false)
-  const [profile, setProfile] = useState<AgriculturalProfile>(initialProfile)
-  const [role, setRole] = useState<UserRole>('grower')
+  const [saved] = useState(readJourney)
+  const [scene, setScene] = useState<Scene | 'project'>(sceneFromHash)
+  const [role, setRole] = useState<UserRole | null>(saved?.role ?? null)
+  const [profile, setProfile] = useState<AgriculturalProfile>(saved?.profile ?? initialProfile)
+  const [guided, setGuided] = useState(saved?.guided ?? true)
+  const [paused, setPaused] = useState(saved?.paused ?? false)
+  const [profileDone, setProfileDone] = useState(saved?.profileDone ?? false)
+  const [profileQuestion, setProfileQuestion] = useState(0)
+  const [planningPhase, setPlanningPhase] = useState(0)
+  const [fieldState, setFieldState] = useState({ drawing: false, points: 0 })
+  const [visited, setVisited] = useState<Partial<Record<Scene, boolean>>>(() => scene === 'project' ? {} : { [scene]: true })
+  const [evidenceTab, setEvidenceTab] = useState<EvidenceTab>('location')
+  const [candidateDraft, setCandidateDraft] = useState<{ id: string; request: number } | null>(null)
+  const [fieldMode, setFieldMode] = useState<'map' | '3d'>('map')
+  const [cropGuideOpen, setCropGuideOpen] = useState(false)
+  const [explorationStage, setExplorationStage] = useState('growing')
+  const [ndviPrediction, setNdviPrediction] = useState<NdviPredictionResponse | null>(null)
+  const [vegetation, setVegetation] = useState<VegetationResponse | null>(null)
+  const [simSummary, setSimSummary] = useState<ParcelSimulationSummary | null>(null)
+  const [appliedSimulation, setAppliedSimulation] = useState<AppliedFieldSimulation | null>(null)
+  const [topic, setTopic] = useState<LessonTopic>('rainfall')
   const [notice, setNotice] = useState('')
-  const [charts, setCharts] = useState<ChartArtifact[]>([])
+  const [sessionError, setSessionError] = useState(false)
+  const [companionOpen, setCompanionOpen] = useState(false)
   const [assistantTask, setAssistantTask] = useState<{ id: number; text: string } | null>(null)
-  const addCharts = useCallback(
-    (next: ChartArtifact[]) =>
-      setCharts((current) =>
-        [...next, ...current.filter((chart) => !next.some((item) => item.id === chart.id))].slice(0, 6)
-      ),
-    []
-  )
+  const [charts, setCharts] = useState<ChartArtifact[]>([])
   const [comparison, setComparison] = useState<{ input: ComparisonInput; result: CompareResponse } | null>(null)
-  const [plannerOpened, setPlannerOpened] = useState(route() === 'planning')
-  const [fieldOpened, setFieldOpened] = useState(route() === 'parcel')
-
-  // Location intelligence & soil state
-  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null)
-  const [soilProfile, setSoilProfile] = useState<SoilProfile | null>(null)
-  const [soilError, setSoilError] = useState<string | null>(null)
-  const [providersReport, setProvidersReport] = useState<LocationProvidersReport | null>(null)
-  const [terrainInfo, setTerrainInfo] = useState<TerrainInfo | null>(null)
-  const [analysisLoading, setAnalysisLoading] = useState({
-    location: false,
-    soil: false,
-    providers: false,
-    terrain: false,
-  })
-
+  const simulationCropLabels = useMemo(() => Object.fromEntries(comparison?.result.results.flatMap((row) => row.crops.map((id, index) => [id, row.labels[index]])) ?? []), [comparison])
   const parcel = useParcelBoundary()
-  const { location, climate, loading, error, selectLocation, load } = useClimate(
-    parcel.boundary ? { ...representativePoint(parcel.boundary), source: 'parcel' } : null
-  )
-
-  const onComparison = useCallback(
-    (next: { input: ComparisonInput; result: CompareResponse } | null) => setComparison(next),
-    []
-  )
-
+  const { location, climate, loading, error, selectLocation, load } = useClimate(saved?.location ?? (parcel.boundary ? { ...representativePoint(parcel.boundary), source: 'parcel' } : null))
+  const fieldEvidence = useFieldEvidence(location, parcel.boundary)
+  const fieldPrediction = ndviPrediction?.lat === location?.lat && ndviPrediction?.lon === location?.lon ? ndviPrediction : null
+  const fieldVegetation = vegetation && vegetation.lat === location?.lat && vegetation.lon === location?.lon ? vegetation : null
+  const lastScene = useRef<Scene>(saved?.scene ?? 'field')
+  const onComparison = useCallback((next: { input: ComparisonInput; result: CompareResponse } | null) => setComparison(next), [])
+  const onFieldState = useCallback((drawing: boolean, points: number) => setFieldState((current) => current.drawing === drawing && current.points === points ? current : { drawing, points }), [])
+  const addCharts = useCallback((next: ChartArtifact[]) => setCharts((current) => [...next, ...current.filter((chart) => !next.some((item) => item.id === chart.id))].slice(0, 6)), [])
+  useEffect(() => { const update = () => setScene(sceneFromHash()); window.addEventListener('hashchange', update); return () => window.removeEventListener('hashchange', update) }, [])
   useEffect(() => {
-    const onHash = () => {
-      setView(route())
-      setMobileMenu(false)
-      window.scrollTo({ top: 0, behavior: 'instant' })
-    }
-    window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
-  }, [])
-
+    if (scene === 'project') return
+    setVisited((current) => current[scene] ? current : { ...current, [scene]: true })
+    document.title = `Pacha Pulse · ${scenes.find((item) => item.id === scene)?.label}`
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    const frame = requestAnimationFrame(() => document.getElementById('workspace-main')?.focus({ preventScroll: true }))
+    return () => cancelAnimationFrame(frame)
+  }, [scene])
   useEffect(() => {
-    if (view === 'planning') setPlannerOpened(true)
-    if (view === 'parcel') setFieldOpened(true)
-    document.title = `Pacha Pulse · ${modules.find((module) => module.id === view)?.title || 'A little guidance. A clearer field.'}`
-  }, [view])
+    if (scene !== 'welcome' && scene !== 'project' && scene !== 'help') lastScene.current = scene
+    const ok = saveJourney({ version: 1, scene: lastScene.current, role, profile, location, guided, paused, profileDone })
+    setSessionError(!ok)
+  }, [scene, role, profile, location, guided, paused, profileDone])
+  useEffect(() => { setComparison(null) }, [climate, profile.soil, profile.water])
 
-  useEffect(() => {
-    setComparison(null)
-  }, [climate, profile.soil, profile.water])
-
-  const fetchAnalysis = useCallback((lat: number, lon: number, poly = parcel.boundary) => {
-    let polyLats: string | undefined
-    let polyLons: string | undefined
-    const verts = verticesOf(poly)
-    if (verts.length >= 3) {
-      polyLats = verts.map((v) => v.lat).join(',')
-      polyLons = verts.map((v) => v.lon).join(',')
-    }
-    setAnalysisLoading({ location: true, soil: true, providers: true, terrain: true })
-
-    getLocationInfo(lat, lon)
-      .then((info) => {
-        setLocationInfo(info)
-        setAnalysisLoading((prev) => ({ ...prev, location: false }))
-      })
-      .catch(() => setAnalysisLoading((prev) => ({ ...prev, location: false })))
-
-    getSoilProfile(lat, lon)
-      .then((soil) => {
-        setSoilProfile(soil)
-        setSoilError(null)
-        setAnalysisLoading((prev) => ({ ...prev, soil: false }))
-      })
-      .catch((err: unknown) => {
-        setSoilError(err instanceof Error ? err.message : 'SoilGrids request failed.')
-        setAnalysisLoading((prev) => ({ ...prev, soil: false }))
-      })
-
-    getLocationProviders(lat, lon)
-      .then((rep) => {
-        setProvidersReport(rep)
-        setAnalysisLoading((prev) => ({ ...prev, providers: false }))
-      })
-      .catch(() => setAnalysisLoading((prev) => ({ ...prev, providers: false })))
-
-    getTerrain(lat, lon, polyLats, polyLons)
-      .then((ter) => {
-        setTerrainInfo(ter)
-        setAnalysisLoading((prev) => ({ ...prev, terrain: false }))
-      })
-      .catch(() => setAnalysisLoading((prev) => ({ ...prev, terrain: false })))
-  }, [parcel.boundary])
-
-  // Fetch location intelligence, soil, terrain and providers whenever location changes
-  useEffect(() => {
-    if (!location) {
-      setLocationInfo(null)
-      setSoilProfile(null)
-      setSoilError(null)
-      setTerrainInfo(null)
-      setProvidersReport(null)
-      return
-    }
-    fetchAnalysis(location.lat, location.lon)
-  }, [location?.lat, location?.lon, fetchAnalysis])
-
-  function navigate(next: AppView) {
-    const module = modules.find((item) => item.id === next)!
-    window.location.hash = module.hash
-    setView(next)
-    setMobileMenu(false)
-  }
-
-  function setLocation(next: Location) {
-    selectLocation(next)
-    setComparison(null)
-  }
-
+  function navigate(next: Scene) { if (next === 'field') setFieldMode('map'); setScene(next); window.location.hash = scenes.find((item) => item.id === next)!.hash }
+  function navigateView(view: AppView) { navigate(scenes.find((item) => item.view === view)?.id ?? 'welcome') }
+  function tryCrop(crop: Crop) { setCandidateDraft({ id: crop.id, request: Date.now() }); setNotice(`${crop.common_name} will be placed in the first campaign of Alternative A. Review the complete sequence.`); navigate('planning') }
+  function chooseRole(next: UserRole) { setRole(next); navigate('field') }
+  function setLocation(next: Location) { selectLocation(next); setComparison(null) }
   function applyProposal(proposal: AssistantProposal) {
-    if (proposal.kind === 'navigate' && modules.some((module) => module.id === proposal.view)) navigate(proposal.view!)
+    if (proposal.kind === 'navigate' && proposal.view) { const target = scenes.find((item) => item.id === proposal.scene && item.view === proposal.view); if (target) navigate(target.id); else navigateView(proposal.view) }
     if (proposal.kind === 'update_profile' && proposal.profile) {
       const patch: Partial<AgriculturalProfile> = {}
-      for (const key of ['name', 'crop', 'previousRotation'] as const) {
-        const value = proposal.profile[key]
-        if (typeof value === 'string') patch[key] = value.slice(0, key === 'previousRotation' ? 500 : 80)
-      }
-      if (typeof proposal.profile.areaHa === 'number' && Number.isFinite(proposal.profile.areaHa) && proposal.profile.areaHa > 0 && proposal.profile.areaHa <= 1_000_000)
-        patch.areaHa = proposal.profile.areaHa
-      if (['unknown', 'sandy', 'loamy', 'clayey', 'other'].includes(proposal.profile.soil || ''))
-        patch.soil = proposal.profile.soil!
-      if (['unknown', 'rainfed', 'irrigated', 'mixed'].includes(proposal.profile.water || ''))
-        patch.water = proposal.profile.water!
-      setProfile((current) => ({ ...current, ...patch }))
-      setNotice('Your confirmed profile update has been applied. Review it in My field.')
+      for (const key of ['name', 'crop', 'previousRotation'] as const) { const value = proposal.profile[key]; if (typeof value === 'string') patch[key] = value.slice(0, key === 'previousRotation' ? 500 : 80) }
+      const value = proposal.profile.areaHa
+      if (typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 1e6) patch.areaHa = value
+      if (['unknown', 'sandy', 'loamy', 'clayey', 'other'].includes(proposal.profile.soil || '')) patch.soil = proposal.profile.soil!
+      if (['unknown', 'rainfed', 'irrigated', 'mixed'].includes(proposal.profile.water || '')) patch.water = proposal.profile.water!
+      setProfile((current) => ({ ...current, ...patch })); setNotice('Your confirmed field details have been applied. Review them in About my field.')
     }
-    if (proposal.kind === 'set_location' && proposal.location) {
-      const { lat, lon } = proposal.location
-      if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
-        setLocation({ lat, lon, source: 'manual' })
-        setNotice('Your confirmed query point has been applied. Previous climate results were cleared.')
-      }
-    }
+    if (proposal.kind === 'set_location' && proposal.location) { const { lat, lon } = proposal.location; if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) { setLocation({ lat, lon, source: 'manual' }); setNotice('Your confirmed location is selected. Previous weather results were cleared.') } }
   }
-
-  const module = modules.find((item) => item.id === view)
-  if (!view) return <ProjectPage />
-
-  const summary = {
-    project: 'Pacha Pulse',
-    exported_at: new Date().toISOString(),
-    profile: { ...profile, status: 'user_input' },
-    query_point: location,
-    location_intelligence: locationInfo,
-    soil_profile: soilProfile,
-    field: parcel.boundary,
-    climate,
-    comparison: comparison?.result ?? null,
-    comparison_inputs: comparison?.input ?? null,
-    charts,
-    data_providers: [
-      { name: 'NASA POWER', status: climate ? 'loaded' : 'ready' },
-      {
-        name: 'ISRIC SoilGrids 250m',
-        status: soilProfile
-          ? soilProfile.provenance.status === 'unavailable'
-            ? 'unavailable'
-            : 'loaded'
-          : soilError
-          ? 'error'
-          : 'pending',
-      },
-      { name: 'FAO GAEZ v5', status: 'active' },
-      { name: 'FAOSTAT', status: 'active' },
-      { name: 'Copernicus ERA5-Land', status: 'active' },
-      { name: 'SENAMHI', status: locationInfo?.country_code === 'PE' ? 'active_regional' : 'disabled_outside_peru' },
-    ],
-    limitations: [
-      'Historical NASA POWER climate is not a parcel measurement or weather forecast.',
-      'SoilGrids provides statistical machine-learning 250m predictions; laboratory testing is recommended.',
-      'FAO GAEZ v5 indicates biophysical potential, not guaranteed harvest or profit.',
-      'MODIS satellite vegetation indices for pilot regions remain pending validation.',
-    ],
+  if (scene === 'project') return <ProjectPage />
+  const pointOutside = !!(parcel.boundary && location && !containsPoint(parcel.boundary, location))
+  const current = scenes.find((item) => item.id === scene)!
+  const ready: Record<Scene, { available: boolean; done: boolean; reason?: string }> = {
+    evidence: { available: !!location, done: !!fieldEvidence.data.soil || !!fieldEvidence.data.terrain, reason: 'Choose a field point first' }, crops: { available: true, done: false },
+    welcome: { available: true, done: role !== null }, field: { available: true, done: !!location }, profile: { available: !!location, done: profileDone, reason: 'Choose a location first' }, climate: { available: true, done: !!climate }, planning: { available: true, done: !!comparison }, charts: { available: !!climate || !!comparison || charts.length > 0, done: charts.length > 0, reason: 'Load weather or compare sequences first' }, summary: { available: !!location || !!comparison || charts.length > 0, done: false, reason: 'Start a field or compare sequences first' }, help: { available: true, done: false },
   }
+  const tech = role === 'agronomist'
+  let guidance = guidanceFor(scene, { location, boundary: !!parcel.boundary, profile, climate, comparison: comparison?.result ?? null, topic, loading: scene === 'climate' && loading, error: scene === 'climate' ? error : '', role: role || 'grower' })
+  if (scene === 'field' && fieldState.drawing) guidance = { title: fieldState.points < 3 ? 'One corner at a time.' : 'Now, close the loop.', text: tech ? `Draft ring has ${fieldState.points} vertices. Minimum 3 non-collinear WGS84 points required before closing at vertex 1.` : fieldState.points < 3 ? `You have ${fieldState.points} ${fieldState.points === 1 ? 'corner' : 'corners'}. Tap the next edge of your field.` : 'Tap the green point 1 to close and save your field.', extra: 'Drawing is a draft until you close and save. You can undo a point, use coordinates in Field tools, or pause drawing without replacing the saved outline.', mood: 'listen' }
+  if (scene === 'field' && pointOutside && !fieldState.drawing) guidance = { title: 'Check the weather point.', text: tech ? 'Selected query point lies outside the saved polygon ring. Open Field tools to snap the query point to the interior representative point.' : 'Your weather point is outside your field. Open Field tools and tap Use field query point.', extra: 'NASA reads the selected query point. A saved outline does not automatically make an outside point represent your field.', mood: 'listen' }
+  if (scene === 'profile') guidance = { ...guidance, title: ['What shall we call this place?', 'What do you grow here?', 'What supplies your water?'][profileQuestion], text: tech ? ['Assign a field identifier for session and JSON report provenance.', 'Specify current baseline crop. Used as reference context without overriding screening.', 'Select water regime (rainfed, irrigated, mixed, or unknown) to contextualize GAEZ and rotation checks.'][profileQuestion] : ['Pick any name you like for your land.', 'Choose a crop or type your own. You can also skip this.', 'Rain, irrigation, both, or not sure. Unknown is a good, honest answer.'][profileQuestion] }
+  if (scene === 'planning' && !comparison) guidance = { ...guidance, title: ['First, your usual planting story.', 'Let us explore another way.', 'One more possibility.', 'A scenario, not a prediction.'][Math.min(planningPhase, 3)] }
+  if (scene === 'field' && fieldMode === '3d') guidance = { title: 'A different point of view.', text: simSummary ? (tech ? simSummary.agronomistText : simSummary.growerText) : tech ? `Planar normalized footprint showing ${explorationStage} stage. Schematic plant grid is illustrative and not a biophysical canopy model.` : `Here is your field in ${explorationStage}. Turn the view or tap another growth stage below.`, extra: 'Your saved outline gives the shape and zone area in hectares. Cycle duration and thermal/rainfall comparisons use FAO/GAEZ reference bands and NASA POWER observations, not a yield prediction.', mood: explorationStage === 'flowering' ? 'celebrate' : 'explain' }
+  if (scene === 'evidence' && evidenceTab !== 'climate' && fieldEvidence.busy[evidenceTab]) guidance = { ...guidance, title: 'I am checking this source.', text: tech ? 'Querying upstream provider endpoint. Unavailable properties remain null without synthetic imputation.' : 'Checking the data now. Missing info stays unknown.', mood: 'think' }
+  const detail = scene === 'evidence' ? evidenceTab : scene === 'crops' ? 'candidate_review' : scene === 'field' ? fieldMode === '3d' ? 'exploring_3d' : fieldState.drawing ? 'drawing' : 'locating' : scene === 'profile' ? ['naming', 'crop', 'water'][profileQuestion] : scene === 'climate' ? topic : scene === 'planning' ? ['baseline', 'alternative_a', 'alternative_b', 'scenario', 'results'][Math.min(planningPhase, 4)] : scene
+  const previous: Partial<Record<Scene, Scene>> = { evidence: 'field', crops: location ? 'evidence' : 'welcome', field: 'welcome', profile: 'field', climate: location ? 'profile' : 'welcome', planning: 'climate', charts: comparison && !climate ? 'planning' : 'climate', summary: comparison ? 'planning' : 'climate', help: 'welcome' }
+  const report = { project: 'Pacha Pulse', exported_at: new Date().toISOString(), profile: { ...profile, status: 'user_input' }, query_point: location, field: parcel.boundary, field_simulation: appliedSimulation ? { crop_id: appliedSimulation.cropId, crop_name: appliedSimulation.cropName, allocated_area_ha: { value: appliedSimulation.allocatedAreaHa, unit: 'ha', status: 'derived', source: 'User polygon + 3D sector selection' }, total_parcel_area_ha: appliedSimulation.totalAreaHa, active_zones: appliedSimulation.activeZones, cycle_duration_days: { value: appliedSimulation.durationDays, unit: 'days', status: 'scenario', source: 'User 3D simulator + FAO/ECOCROP reference' }, start_month: appliedSimulation.startMonth, thermal_status: appliedSimulation.summary.thermalStatus, water_status: appliedSimulation.summary.waterStatus, projected_cycle_rain_mm: appliedSimulation.summary.projectedCycleRainMm, intercepted_rain_m3: appliedSimulation.summary.interceptedRainM3 } : null, earth_evidence: fieldEvidence.data, vegetation: fieldVegetation, ndvi_outlook: fieldPrediction, climate, comparison: comparison?.result ?? null, comparison_inputs: comparison?.input ?? null, charts, limitations: ['Historical climate is not a forecast or a parcel measurement.', 'Polygon area is approximate, calculated from a user outline.', 'Rotation counts do not establish suitability, yield or profitability.', 'MODIS describes canopy greenness; its experimental outlook is not a yield or pest forecast. Field soil sensors, pest detection and economic forecasting are not integrated. SoilGrids and terrain summaries are estimates, not field laboratory measurements.'] }
 
-  return (
-    <div className="app-shell">
-      <a
-        className="skip-link"
-        href="#workspace-main"
-        onClick={(event) => {
-          event.preventDefault()
-          document.getElementById('workspace-main')?.focus()
-        }}
-      >
-        Skip to content
-      </a>
-
-      <aside className={`sidebar ${mobileMenu ? 'menu-open' : ''}`}>
-        <a className="brand" href="#project">
-          <span className="brand-icon">
-            <Sprout size={28} />
-          </span>
-          <span>
-            Pacha Pulse<small>A LITTLE GUIDANCE. A CLEARER FIELD.</small>
-          </span>
-        </a>
-        <p className="nav-caption">YOUR FIELD NOTEBOOK</p>
-        <nav aria-label="Main navigation">
-          {modules.map(({ id, hash, title, Icon }) => (
-            <a
-              key={id}
-              href={hash}
-              className={`nav-item ${view === id ? 'active' : ''}`}
-              aria-current={view === id ? 'page' : undefined}
-            >
-              <Icon size={20} />
-              <span>{title}</span>
-              {view === id && <span className="nav-active-dot" />}
-            </a>
-          ))}
-        </nav>
-        <div className="sidebar-note">
-          <Sprout size={27} />
-          <h2>Rooted in your reality.</h2>
-          <p>Your knowledge of the land, with NASA climate context, SoilGrids, and a patient companion.</p>
-        </div>
-        <div className="sidebar-footer">
-          <a href="#project">
-            About Pacha Pulse <ArrowRight size={15} />
-          </a>
-          <p>Decision support · Global Agro-Intelligence</p>
-        </div>
-      </aside>
-
-      <div className="workspace">
-        <header className="topbar">
-          <button
-            className="mobile-menu-button icon-button"
-            onClick={() => setMobileMenu(!mobileMenu)}
-            aria-label={mobileMenu ? 'Close navigation' : 'Open navigation'}
-            aria-expanded={mobileMenu}
-          >
-            {mobileMenu ? <X size={22} /> : <Menu size={22} />}
-          </button>
-          <div className="breadcrumb">
-            <Sprout size={18} />
-            <span>Pacha Pulse</span>
-            <span>/</span>
-            <strong>{module?.title}</strong>
-          </div>
-          <div className="topbar-actions">
-            <ApiStatus />
-            <label className="role-selector">
-              Work mode
-              <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-                <option value="grower">Grower</option>
-                <option value="agronomist">Agronomist</option>
-              </select>
-            </label>
-          </div>
-        </header>
-
-        <main id="workspace-main" tabIndex={-1}>
-          {view === 'overview' ? (
-            <>
-              <section className="field-banner">
-                <div className="welcome-plaque">
-                  <p className="eyebrow">WELCOME TO YOUR FIELD NOTEBOOK</p>
-                  <h1>
-                    A little guidance.
-                    <br />
-                    <em>A clearer field.</em>
-                  </h1>
-                  <p>Start with what you know. Discover the next step together.</p>
-                  <button className="primary-button" onClick={() => setCompanionOpen(true)}>
-                    Take a guided tour
-                    <ArrowRight size={18} />
-                  </button>
-                </div>
-                <span className="art-credit">Illustrated landscape · not satellite imagery</span>
-              </section>
-
-              <div className="overview-heading">
-                <div>
-                  <p className="eyebrow">SMALL STEPS, MEANINGFUL CONTEXT</p>
-                  <h2>{profile.name ? `Your notebook: ${profile.name}` : 'Where would you like to start?'}</h2>
-                </div>
-                <span className="subtle-tag">{role === 'grower' ? 'Grower workspace' : 'Agronomist workspace'}</span>
-              </div>
-
-              <div className="overview-grid">
-                {modules.slice(1, 5).map(({ id, title, Icon, description }, index) => (
-                  <article className="paper-card next-step-card" key={id}>
-                    <span className="step-number">0{index + 1}</span>
-                    <Icon size={29} />
-                    <h2>{title}</h2>
-                    <p>{description}</p>
-                    <button className="text-button" onClick={() => navigate(id)}>
-                      Open {title}
-                      <ArrowRight size={17} />
-                    </button>
-                    <small>
-                      {id === 'parcel'
-                        ? location
-                          ? `Query point: ${locationInfo ? `${locationInfo.region}, ${locationInfo.country_code}` : 'Selected'}`
-                          : 'Start here'
-                        : id === 'crops'
-                        ? location
-                          ? 'Suitability candidates ready'
-                          : 'Explore location crops'
-                        : id === 'monitoring'
-                        ? climate
-                          ? 'Historical observations loaded'
-                          : 'Historical observations, not forecasts'
-                        : comparison
-                        ? 'Comparison ready'
-                        : 'Your planting options, with agronomic rules'}
-                    </small>
-                  </article>
-                ))}
-              </div>
-
-              <section className="paper-card plain-summary">
-                <div>
-                  <span className="eyebrow">YOUR NOTEBOOK SO FAR</span>
-                  <h2>Only what we actually know.</h2>
-                  <p>
-                    {locationInfo
-                      ? `Field located in ${locationInfo.region}, ${locationInfo.country_name} (${locationInfo.elevation_m ? `${locationInfo.elevation_m.toFixed(0)} m.a.s.l.` : 'elevation unknown'}). `
-                      : 'No query point selected yet. '}
-                    {soilProfile?.ph_h2o?.profile_mean
-                      ? `SoilGrids pH is ${soilProfile.ph_h2o.profile_mean} with ${soilProfile.soil_texture_class.replace('_', ' ')} texture. `
-                      : ''}
-                    {profile.crop ? `You entered ${profile.crop} as your current crop. ` : 'Your current crop is not specified yet. '}
-                    {climate
-                      ? `NASA POWER historical data is loaded for ${climate.start} to ${climate.end}.`
-                      : 'No climate results are loaded yet.'}
-                  </p>
-                </div>
-                <button className="secondary-button" onClick={() => setCompanionOpen(true)}>
-                  Help me understand
-                  <CircleHelp size={18} />
-                </button>
-              </section>
-            </>
-          ) : (
-            <div className="page-intro">
-              <p className="eyebrow">YOUR FIELD NOTEBOOK / {module?.title.toUpperCase()}</p>
-              <h1>{module?.title}</h1>
-              <p>{module?.description}</p>
-            </div>
-          )}
-
-          {notice && (
-            <div className="workspace-notice" role="status">
-              <Check size={18} />
-              <p>{notice}</p>
-              <button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice('')}>
-                <X size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* PARCEL VIEW */}
-          <div hidden={view !== 'parcel'}>
-            {(view === 'parcel' || fieldOpened) && (
-              <>
-                <p className="role-guidance">
-                  <Info size={19} />
-                  {role === 'grower'
-                    ? 'Choose a point or draw your field. Add only the profile details you know. The system detects your country, region and soil automatically.'
-                    : 'Review WGS84 geometry, reverse geocoding, DEM altitude, and ISRIC SoilGrids 250m properties. NASA POWER and SoilGrids use the representative query point.'}
-                </p>
-
-                <div className="field-grid">
-                  <section className="panel location-panel" aria-labelledby="location-heading">
-                    <div className="panel-title">
-                      <div>
-                        <p className="eyebrow">A PLACE TO BEGIN</p>
-                        <h2 id="location-heading">Find and outline your field</h2>
-                      </div>
-                      <MapPinned size={23} />
-                    </div>
-                    <LocationMap
-                      location={location}
-                      onSelect={setLocation}
-                      role={role}
-                      boundary={parcel.boundary}
-                      storageMessage={parcel.storageMessage}
-                      onSaveBoundary={(next) => {
-                        parcel.save(next)
-                        if (next) setLocation({ ...representativePoint(next), source: 'parcel' })
-                      }}
-                    />
-                    <CoordinateForm location={location} onSelect={setLocation} />
-                    <p className="location-status" role="status">
-                      {location
-                        ? `Query point: ${location.lat.toFixed(6)}°, ${location.lon.toFixed(6)}° · ${
-                            location.source === 'parcel' ? 'field reference' : location.source
-                          }`
-                        : 'No query point selected yet.'}
-                    </p>
-
-                    {/* Integrated Field Analysis Panel (Location, Soil Profile, Terrain, Climate, Providers) */}
-                    {location && (
-                      <FieldAnalysisPanel
-                        locationInfo={locationInfo}
-                        soilProfile={soilProfile}
-                        providers={providersReport}
-                        terrain={terrainInfo}
-                        loading={analysisLoading}
-                        onRetry={() => fetchAnalysis(location.lat, location.lon)}
-                      />
-                    )}
-                  </section>
-                  <ProfileForm profile={profile} onSave={setProfile} />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* CROPS VIEW */}
-          {view === 'crops' && (
-            <CropExplorer
-              location={location}
-              locationInfo={locationInfo}
-              soil={soilProfile}
-              role={role}
-              onSelectForRotation={(cropId) => {
-                navigate('planning')
-                setNotice(`Selected ${cropId} for your sequence in Rotation planner.`)
-              }}
-              onNavigateToField={() => navigate('parcel')}
-            />
-          )}
-
-          {/* MONITORING VIEW */}
-          {view === 'monitoring' && (
-            <>
-              {!location && (
-                <div className="workspace-notice">
-                  <MapPinned size={21} />
-                  <p>Choose your query point in My field, or try the clearly labelled saved example below.</p>
-                  <button className="secondary-button" onClick={() => navigate('parcel')}>
-                    Choose location
-                  </button>
-                </div>
-              )}
-              <Suspense fallback={<p role="status">Loading climate tools…</p>}>
-                <ClimatePanel
-                  location={location}
-                  climate={climate}
-                  loading={loading}
-                  error={error}
-                  onLoad={load}
-                  role={role}
-                />
-              </Suspense>
-            </>
-          )}
-
-          {/* PLANNING VIEW */}
-          <div hidden={view !== 'planning'}>
-            {(view === 'planning' || plannerOpened) && (
-              <RotationPlanner
-                climate={climate}
-                profile={profile}
-                role={role}
-                onComparison={onComparison}
-              />
-            )}
-          </div>
-
-          {/* CHARTS VIEW */}
-          {view === 'charts' && (
-            <Suspense fallback={<p role="status">Loading chart tools...</p>}>
-              <ChartWorkbench
-                climate={climateReference(climate)}
-                comparison={comparison?.input ?? null}
-                charts={charts}
-                onAdd={addCharts}
-                onRemove={(id) => setCharts((current) => current.filter((chart) => chart.id !== id))}
-                onAsk={(spec) => {
-                  setAssistantTask({
-                    id: Date.now(),
-                    text: `Please create a ${spec.aggregation === 'weekly' ? '7-day grouped' : 'daily'} ${
-                      spec.chart_type
-                    } chart of ${spec.metric.replaceAll('_', ' ')} from my available data.`,
-                  })
-                  setCompanionOpen(true)
-                }}
-                onClimate={() => navigate('monitoring')}
-                onPlanning={() => navigate('planning')}
-              />
-            </Suspense>
-          )}
-
-          {/* REPORTS VIEW */}
-          {view === 'reports' && (
-            <section className="panel report-panel" aria-labelledby="report-title">
-              <div className="panel-title">
-                <div>
-                  <p className="eyebrow">YOUR INPUTS AND SCIENTIFIC DATA PROVENANCE</p>
-                  <h2 id="report-title">Comprehensive Field Report</h2>
-                </div>
-                <FileText size={24} />
-              </div>
-              <p>Export an evidence record to share with an agronomist. Empty results stay unknown.</p>
-
-              <dl className="report-facts">
-                <div>
-                  <dt>Field name</dt>
-                  <dd>{profile.name || 'Not supplied'}</dd>
-                </div>
-                <div>
-                  <dt>Location</dt>
-                  <dd>
-                    {locationInfo
-                      ? `${locationInfo.region}, ${locationInfo.country_name} (${locationInfo.country_code})`
-                      : 'Not identified'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Elevation & Hemisphere</dt>
-                  <dd>
-                    {locationInfo
-                      ? `${locationInfo.elevation_m ? `${locationInfo.elevation_m.toFixed(0)} m.a.s.l.` : 'Unknown'} · ${locationInfo.hemisphere} hemisphere`
-                      : 'Unknown'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Soil properties (SoilGrids)</dt>
-                  <dd>
-                    {soilProfile?.ph_h2o?.profile_mean
-                      ? `pH ${soilProfile.ph_h2o.profile_mean} · ${soilProfile.soil_texture_class.replace('_', ' ')} texture`
-                      : soilProfile?.provenance.status === 'unavailable'
-                      ? 'SoilGrids unavailable'
-                      : soilError
-                      ? 'SoilGrids request failed'
-                      : 'SoilGrids unqueried'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Current crop</dt>
-                  <dd>{profile.crop || 'Not supplied'} · user input</dd>
-                </div>
-                <div>
-                  <dt>Query point</dt>
-                  <dd>{location ? `${location.lat.toFixed(6)}°, ${location.lon.toFixed(6)}°` : 'Not selected'}</dd>
-                </div>
-                <div>
-                  <dt>Outline</dt>
-                  <dd>
-                    {parcel.boundary
-                      ? `${parcel.boundary.properties.area.value.toFixed(4)} ha · approximate derived area`
-                      : 'Not drawn'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Climate (NASA POWER)</dt>
-                  <dd>
-                    {climate
-                      ? `NASA POWER MERRA-2 · ${climate.start} to ${climate.end} · ${climate.delivery.replaceAll(
-                          '_',
-                          ' '
-                        )}`
-                      : 'No observations loaded'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Rotation comparison</dt>
-                  <dd>
-                    {comparison
-                      ? 'Multi-criteria sequence evaluation ready · botanical & calendar rules applied'
-                      : 'No comparison available'}
-                  </dd>
-                </div>
-              </dl>
-
-              {climate && (
-                <p>
-                  Historical rainfall total:{' '}
-                  {climate.summary.rainfall_total.value === null
-                    ? 'Unavailable'
-                    : `${climate.summary.rainfall_total.value} mm`}
-                  . Mean temperature:{' '}
-                  {climate.summary.temperature_mean.value === null
-                    ? 'Unavailable'
-                    : `${climate.summary.temperature_mean.value} °C`}
-                  . These describe the selected past period at a grid point, not next season or a measured field.
-                </p>
-              )}
-
-              <div className="report-actions">
-                <button className="primary-button" onClick={() => downloadJson(summary)}>
-                  <ArrowDownToLine size={18} />
-                  Export report JSON
-                </button>
-                <button className="secondary-button" onClick={() => window.print()}>
-                  Print report
-                </button>
-              </div>
-
-              <p className="helper-text">
-                Profile and results last for this tab session. Only the saved outline stays in this browser after a
-                reload. Export before leaving.
-              </p>
-            </section>
-          )}
-
-          {/* HELP VIEW */}
-          {view === 'help' && (
-            <div className="help-grid">
-              <section className="panel">
-                <div className="panel-title">
-                  <h2>Find your next step</h2>
-                  <CircleHelp size={24} />
-                </div>
-                <div className="module-help">
-                  {modules.slice(1, 7).map((item) => (
-                    <article key={item.id}>
-                      <item.Icon size={22} />
-                      <div>
-                        <h3>{item.title}</h3>
-                        <p>{item.description}</p>
-                      </div>
-                      <button
-                        className="icon-button"
-                        aria-label={`Open ${item.title}`}
-                        onClick={() => navigate(item.id)}
-                      >
-                        <ArrowRight size={19} />
-                      </button>
-                    </article>
-                  ))}
-                </div>
-                <button className="secondary-button" onClick={() => setCompanionOpen(true)}>
-                  Walk through it with Pacha
-                </button>
-              </section>
-
-              <section className="panel source-help">
-                <div className="panel-title">
-                  <h2>Clear sources. Honest limits.</h2>
-                  <Info size={23} />
-                </div>
-                <p>
-                  <strong>NASA POWER</strong> supplies historical temperature and rainfall via MERRA-2 assimilation (0.5° × 0.625° grid).{' '}
-                  <a href="https://power.larc.nasa.gov/docs/services/api/temporal/daily/" target="_blank" rel="noreferrer">
-                    NASA documentation
-                  </a>
-                </p>
-                <p>
-                  <strong>ISRIC SoilGrids v2.0</strong> provides machine learning predictions for soil pH, organic carbon, texture and bulk density across standard depths at 250m resolution.{' '}
-                  <a href="https://soilgrids.org/" target="_blank" rel="noreferrer">
-                    ISRIC SoilGrids
-                  </a>
-                </p>
-                <p>
-                  <strong>FAO GAEZ v5</strong> provides agro-ecological suitability classes based on climate, terrain, and soil moisture constraints.{' '}
-                  <a href="https://gaez.fao.org/" target="_blank" rel="noreferrer">
-                    FAO GAEZ
-                  </a>
-                </p>
-                <p>
-                  <strong>FAOSTAT</strong> provides macro-economic harvested area and production volume by country.{' '}
-                  <a href="https://www.fao.org/faostat/en/" target="_blank" rel="noreferrer">
-                    FAOSTAT
-                  </a>
-                </p>
-                <p>
-                  <strong>SENAMHI (Peru)</strong> supplies in-situ surface meteorological station records, automatically active within Peru.{' '}
-                  <a href="https://www.senamhi.gob.pe/" target="_blank" rel="noreferrer">
-                    SENAMHI
-                  </a>
-                </p>
-                <p>
-                  <strong>Copernicus ERA5-Land</strong> provides ~9 km ECMWF reanalysis data complementing NASA POWER.{' '}
-                  <a href="https://cds.climate.copernicus.eu/" target="_blank" rel="noreferrer">
-                    Copernicus CDS
-                  </a>
-                </p>
-                <p>
-                  <strong>Gemini AI Assistant</strong> interprets queries and calls strictly allowlisted backend tools to retrieve factual data. It never hallucinates scientific measurements.
-                </p>
-              </section>
-            </div>
-          )}
-
-          <footer className="page-footer">
-            <span>
-              <Sprout size={16} />
-              Pacha Pulse · Your field, in perspective.
-            </span>
-            <span>Decision support · Review important decisions with an agronomist.</span>
-          </footer>
-        </main>
-      </div>
-
-      <PachaCompanion
-        task={assistantTask}
-        onCharts={addCharts}
-        open={companionOpen}
-        onOpen={setCompanionOpen}
-        context={{
-          view,
-          role,
-          profile,
-          location: location ? { lat: location.lat, lon: location.lon } : null,
-          parcel_area_ha: parcel.boundary?.properties.area.value ?? null,
-          climate: climateReference(climate),
-          comparison: comparison?.input ?? null,
-          country_code: locationInfo?.country_code,
-          country_name: locationInfo?.country_name,
-          region: locationInfo?.region,
-        }}
-        onNavigate={navigate}
-        onApply={applyProposal}
-      />
-    </div>
-  )
+  return <div className={`journey-shell ${paused ? 'motion-off' : ''} ${guided ? 'guided-mode' : 'explore-mode'}`} data-scene={scene} data-field-mode={fieldMode} data-role={role || 'grower'}>
+    <a className="skip-link" href="#workspace-main" onClick={(event) => { event.preventDefault(); document.getElementById('workspace-main')?.focus() }}>Skip to content</a>
+    <header className="journey-header"><JourneyMenu scene={scene} guided={guided} paused={paused} role={role} ready={ready} onNavigate={navigate} onGuided={setGuided} onPause={setPaused} onRole={setRole} onProject={() => { window.location.hash = '#project' }} /><a className="journey-brand" href="#demo"><img src="/art/logo.jpeg" alt="" className="brand-logo-img" /><span>Pacha Pulse</span></a><div className="journey-orientation">{scene !== 'welcome' && <><span className="journey-role-badge">{tech ? 'Agronomist' : 'Grower'}</span><span className="journey-current-field"><span />{scene === 'climate' && climate?.delivery === 'saved_observation' ? 'Mantaro example' : profile.name || 'Your field notebook'}</span><span className="journey-step">{current.step ? `${current.step} / 5` : 'Help'}</span></>}</div></header>
+    <main id="workspace-main" className="journey-main" tabIndex={-1}>
+      {scene === 'welcome' && <section className="welcome-scene scene-reveal"><div className="welcome-copy"><p className="eyebrow"><span />YOUR LAND. A LITTLE MORE UNDERSTANDING.</p><h1 id={`${scene}-scene-heading`} tabIndex={-1}>Good things grow<br /><em>one step at a time.</em></h1><p className="welcome-description">A place for your field, your questions,<br />and a little perspective. Let us begin together.</p><div className="role-choices" role="group" aria-label="Choose how you work with the land"><button onClick={() => chooseRole('grower')}><span className="role-choice-icon"><Sprout size={25} /></span><span><strong>I grow crops</strong><small>Simple, large text & clear steps for my field.</small></span><ArrowRight size={21} /></button><button onClick={() => chooseRole('agronomist')}><span className="role-choice-icon"><Leaf size={25} /></span><span><strong>I advise growers</strong><small>Technical detail, provenance & validation tables.</small></span><ArrowRight size={21} /></button></div>{role && <button className="resume-journey text-button" onClick={() => navigate(lastScene.current)}>Welcome back. Continue your journey<ArrowRight size={16} /></button>}<span className="welcome-footnote">No perfect answers needed. Pacha will help you along the way.</span></div><div className="welcome-landscape" aria-hidden="true" /><span className="landscape-attribution">Illustrated landscape</span></section>}
+      <div className="field-scene" hidden={scene !== 'field'}>{visited.field && <><div className="field-map-surface" hidden={fieldMode === '3d'}><LocationMap immersive location={location} terrain={fieldEvidence.data.terrain} onSelect={setLocation} role={role || 'grower'} boundary={parcel.boundary} storageMessage={parcel.storageMessage} onState={onFieldState} onExplore={() => setFieldMode('3d')} onCrops={() => setCropGuideOpen(true)} onEvidence={() => { setEvidenceTab('terrain'); navigate('evidence') }} onSaveBoundary={(next) => { parcel.save(next); if (next) setLocation({ ...representativePoint(next), source: 'parcel' }) }} /><div className="field-confirm-bar"><div><MapPin size={19} /><span>{parcel.boundary ? parcel.boundary.properties.name : location ? 'Your query point is selected' : 'Move, zoom, and tap your field'}<small>{pointOutside ? 'Weather point outside outline: check Field tools.' : parcel.boundary ? `${parcel.boundary.properties.area.value.toFixed(3)} ha · approximate outline area` : location ? `${location.lat.toFixed(5)}°, ${location.lon.toFixed(5)}°` : 'Your outline does not change NASA data resolution.'}</small></span></div><button className="primary-button" disabled={!location || fieldState.drawing} onClick={() => navigate('profile')}>{parcel.boundary ? 'That is my field' : 'Use this location'}<ArrowRight size={17} /></button></div></div>{fieldMode === '3d' && parcel.boundary && <Suspense fallback={<p role="status">Preparing your field perspective...</p>}><FieldExplorer boundary={parcel.boundary} profile={profile} climate={climate} rotations={comparison?.input.rotations ?? null} role={role || 'grower'} vegetation={fieldVegetation} prediction={fieldPrediction} soil={fieldEvidence.data.soil} terrain={fieldEvidence.data.terrain} onEvidence={() => { setEvidenceTab('terrain'); navigate('evidence') }} cropLabels={simulationCropLabels} onBack={() => { setFieldMode('map'); requestAnimationFrame(() => document.getElementById('field-scene-heading')?.focus({ preventScroll: true })) }} onCrops={() => navigate('crops')} onStage={setExplorationStage} onSimulationChange={setSimSummary} onApplySimulation={(applied) => { setAppliedSimulation(applied); setProfile((curr) => ({ ...curr, crop: applied.cropName, areaHa: applied.allocatedAreaHa })); setNotice(`Saved ${applied.cropName} on ${applied.allocatedAreaHa.toFixed(3)} ha (${applied.durationDays} days) to your field plan.`) }} /></Suspense>}</>}</div>
+      <div className="scene-content profile-scene" hidden={scene !== 'profile'}>{visited.profile && <ProfileScene profile={profile} onSave={setProfile} onStep={setProfileQuestion} onCrops={() => navigate('crops')} onSimulate3D={parcel.boundary ? () => { setScene('field'); setFieldMode('3d'); window.location.hash = '#field' } : undefined} onContinue={() => { setProfileDone(true); navigate('climate') }} />}</div>
+      {scene === 'evidence' && <Suspense fallback={<p role="status">Getting the source tools ready...</p>}><FieldEvidenceScene location={location} climate={climate} role={role || 'grower'} tab={evidenceTab} onTab={setEvidenceTab} evidence={fieldEvidence} onField={() => navigate('field')} onCrops={() => navigate('crops')} onClimate={() => navigate('climate')} /></Suspense>}
+      {scene === 'crops' && <Suspense fallback={<p role="status">Getting the crop catalogue ready...</p>}><CandidateScene location={location} info={fieldEvidence.data.location} climate={climateReference(climate)} profile={profile} role={role || 'grower'} onField={() => navigate('field')} onEvidence={() => navigate('evidence')} onPlan={tryCrop} /></Suspense>}
+      {scene === 'climate' && <section className="scene-content climate-scene"><Suspense fallback={<p className="scene-loading" role="status">Getting the weather story ready...</p>}><ClimateScene onPrediction={setNdviPrediction} onVegetation={setVegetation} location={location} climate={climate} loading={loading} error={error} role={role || 'grower'} topic={topic} onTopic={setTopic} onLoad={load} onContinue={() => navigate('planning')} onField={() => navigate('field')} /></Suspense></section>}
+      <div className="scene-content planning-scene" hidden={scene !== 'planning'}>{visited.planning && <><RotationPlanner guided={guided} climate={climate} profile={profile} role={role || 'grower'} onComparison={onComparison} onPhase={setPlanningPhase} candidate={candidateDraft} hemisphere={fieldEvidence.data.location?.hemisphere ?? (location ? location.lat < -2.5 ? 'southern' : location.lat > 2.5 ? 'northern' : 'equatorial' : undefined)} />{comparison && <div className="findings-next-actions"><button className="primary-button" onClick={() => navigate('summary')}>Keep my findings<ArrowRight size={17} /></button><button className="text-button" onClick={() => navigate('charts')}>Make a chart of these options</button></div>}</>}</div>
+      {scene === 'charts' && <section className="scene-content charts-scene"><div className="scene-reveal"><p className="eyebrow">ONE QUESTION. A CLEARER PICTURE.</p><h1 id={`${scene}-scene-heading`} tabIndex={-1}>Let your data<br /><em>tell its story.</em></h1></div><Suspense fallback={<p role="status">Getting chart tools ready...</p>}><ChartWorkbench guided={guided} climate={climateReference(climate)} comparison={comparison?.input ?? null} charts={charts} onAdd={addCharts} onRemove={(id) => setCharts((current) => current.filter((chart) => chart.id !== id))} onAsk={(spec) => { setAssistantTask({ id: Date.now(), text: `Please create a ${spec.aggregation === 'weekly' ? '7-day grouped' : 'daily'} ${spec.chart_type} chart of ${spec.metric.replaceAll('_', ' ')} from my available data, and explain it in one small step.` }); setCompanionOpen(true) }} onClimate={() => navigate('climate')} onPlanning={() => navigate('planning')} /></Suspense></section>}
+      {scene === 'summary' && <section className="scene-content findings-scene scene-reveal"><p className="eyebrow">YOUR KNOWLEDGE. YOUR NEXT CONVERSATION.</p><h1 id={`${scene}-scene-heading`} tabIndex={-1}>A little more context.<br /><em>A little more confidence.</em></h1><p className="scene-description">Here is what you have gathered. Important planting decisions still need local agronomic review.</p><div className="findings-list"><article><span>01</span><div><h2>{profile.name || 'Your field'}</h2><p>{profile.crop ? `Current crop: ${profile.crop} · your input` : 'Current crop not specified.'}</p><small>{location ? `Query point: ${location.lat.toFixed(5)}°, ${location.lon.toFixed(5)}°` : 'No query point selected.'}</small></div></article><article><span>02</span><div><h2>A view of past weather</h2><p>{climate ? `${climate.start} to ${climate.end} · ${climate.delivery === 'saved_observation' ? 'saved Mantaro example' : 'selected query point'}` : 'No observations loaded.'}</p><small>{climate ? `NASA POWER · ${climate.summary.rainfall_total.value === null ? 'rainfall total unknown' : `${climate.summary.rainfall_total.value} mm historical rainfall`}` : 'Historical grid data is not a forecast.'}</small></div></article><article><span>03</span><div><h2>Possibilities to discuss</h2><p>{comparison ? 'Three planting sequences compared.' : 'No rotation comparison prepared yet.'}</p><small>{charts.length} chart snapshots · no suitability or yield prediction</small></div></article></div><div className="findings-next-actions"><button className="primary-button" onClick={() => downloadJson(report)}><ArrowDownToLine size={17} />Keep my report</button><button className="secondary-button" onClick={() => window.print()}>Print a copy</button></div><details className="findings-details" open={tech || undefined}><summary>All field details and limitations</summary><dl><div><dt>Entered area</dt><dd>{profile.areaHa === null ? 'Unknown' : `${profile.areaHa} ha · user input`}</dd></div><div><dt>Outlined area</dt><dd>{parcel.boundary ? `${parcel.boundary.properties.area.value.toFixed(4)} ha · approximate` : 'No outline saved'}</dd></div>{appliedSimulation && <div><dt>3D simulated zone plan</dt><dd>{appliedSimulation.cropName} on {appliedSimulation.allocatedAreaHa.toFixed(4)} ha ({appliedSimulation.durationDays} days · start month {appliedSimulation.startMonth}) · derived</dd></div>}<div><dt>Soil / water</dt><dd>{profile.soil} / {profile.water} · user input</dd></div><div><dt>Previous rotation</dt><dd>{profile.previousRotation || 'Not specified'}</dd></div></dl><ul>{report.limitations.map((text) => <li key={text}>{text}</li>)}</ul></details><p className="session-footnote">Profile, query point and journey: this browser tab. Outline: this browser. Export to keep a separate copy.</p></section>}
+      {scene === 'help' && <section className="scene-content help-scene scene-reveal"><p className="eyebrow">THERE IS ALWAYS ROOM FOR A QUESTION.</p><h1 id={`${scene}-scene-heading`} tabIndex={-1}>Let us take<br /><em>a closer look.</em></h1><div className="help-stories"><details><summary>What can Pacha help me do?</summary><p>Find a field, describe what you know, understand historical weather, explore three planting sequences and prepare charts. The guide works without AI. Gemini adds personalised explanations and typed chart tools; you confirm proposed field changes.</p></details><details><summary>Where do the numbers come from?</summary><p><a href="https://power.larc.nasa.gov/docs/services/api/temporal/daily/" target="_blank" rel="noreferrer">NASA POWER</a> supplies historical grid temperature and rainfall. <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> supplies the map. Your outline and profile come from you.</p></details><details><summary>What is still unknown?</summary><p>SoilGrids and DEM terrain are model estimates, not laboratory tests. Crop screening and rotation rules need local review. MODIS records canopy greenness, not crop health. Experimental NDVI outlooks require validated recent data. Field soil sensors, pest diagnosis, yield and irrigation forecasts remain unavailable. Budgets use your own inputs.</p></details><details><summary>How do I keep or resume my work?</summary><p>Your profile, query point and last step are remembered in this browser tab. Only the outline persists between tabs. Climate, comparisons and charts are session results; export your report and GeoJSON to keep a copy. No cloud account or permanent field database is implied.</p></details><details><summary>Keyboard, motion and work modes</summary><p>Use the Menu to pause motion or explore without guided explanations. The system reduced-motion preference is respected. Map tools include coordinate alternatives. Grower and Agronomist share calculations; technical mode expands methods and observation tables. These modes are not account permissions.</p></details></div></section>}
+      {scene !== 'welcome' && <button className="scene-back-link text-button" onClick={() => navigate(previous[scene] || 'welcome')}><ArrowLeft size={16} />Back</button>}
+      {notice && <div className="journey-notice" role="status"><Check size={17} /><span>{notice}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={17} /></button></div>}
+      {sessionError && <p className="journey-storage-note" role="status">This tab could not remember your progress. Keep an exported copy.</p>}
+    </main>
+    <PachaStage scene={scene} focus={detail} guidance={guidance} guided={guided} paused={paused} role={role || 'grower'} resting={companionOpen || cropGuideOpen || (scene === 'field' && fieldState.drawing)} onPause={() => setPaused(!paused)} onAsk={() => { setAssistantTask({ id: Date.now(), text: '' }); setCompanionOpen(true) }} />
+    <CropGuide open={cropGuideOpen} onClose={() => setCropGuideOpen(false)} climate={pointOutside ? null : climate} location={location} onWeather={() => navigate(location ? 'climate' : 'field')} />
+    <PachaCompanion embedded motionPaused={paused} onMotionChange={setPaused} task={assistantTask} onCharts={addCharts} open={companionOpen} onOpen={setCompanionOpen} context={{ view: current.view, role: role || 'grower', profile, country_code: fieldEvidence.data.location?.country_code ?? null, country_name: fieldEvidence.data.location?.country_name ?? null, region: fieldEvidence.data.location?.region ?? null, location: location ? { lat: location.lat, lon: location.lon } : null, parcel_area_ha: parcel.boundary?.properties.area.value ?? null, climate: climateReference(climate), comparison: comparison?.input ?? null, journey: { scene, step: current.step, detail, mode: guided ? 'guided' : 'explore' } }} onNavigate={navigateView} onApply={applyProposal} />
+  </div>
 }

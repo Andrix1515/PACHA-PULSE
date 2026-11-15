@@ -74,7 +74,13 @@ export default function PachaCompanion({ task, onCharts, open, onOpen, context, 
           {pending && <div className="pacha-thinking" role="status"><PachaRobot thinking /><span>Pacha is thinking…</span></div>}
         </div>
         {error && <p className="field-error chat-error" role="alert">{error}</p>}
-        <div className="quick-questions"><button disabled={pending} onClick={() => void send('Explain this module and give me one next step.')}>Explain this screen</button><button disabled={pending} onClick={() => void send('Explain the available climate and rotation results in simple terms. If there are no results, help me get started.')}>Explain my results</button><button disabled={pending} onClick={() => void send('Please create a readable chart from my available data. Use rainfall if observations are loaded, or rotation structure if a comparison is available. Explain any missing data.')}>Make a chart</button></div>
+        <div className="quick-questions">
+          <button disabled={pending} onClick={() => void send('Analyze my land conditions, coordinates and SoilGrids soil properties.')}>Analyze my land</button>
+          <button disabled={pending} onClick={() => void send('Which crops could suit this location based on GAEZ and climate?')}>Suitable crops</button>
+          <button disabled={pending} onClick={() => void send('¿Cuáles cultivos son adecuados para este lugar y qué riesgos tiene mi rotación?')}>Evaluar en español</button>
+          <button disabled={pending} onClick={() => void send('Simulate a 15% rainfall reduction and evaluate the sensitivity impact.')}>Simulate -15% rain</button>
+          <button disabled={pending} onClick={() => void send('Please create a readable chart from my available data. Use rainfall if observations are loaded, or rotation structure if a comparison is available. Explain any missing data.')}>Make a chart</button>
+        </div>
         <form className="chat-form" onSubmit={(event) => { event.preventDefault(); void send() }}><label htmlFor="pacha-message">Message Pacha</label><div><textarea id="pacha-message" rows={2} maxLength={2000} value={text} onChange={(event) => setText(event.target.value)} placeholder="e.g. My field is 2 hectares and I grow maize." /><button className="primary-button" type="submit" disabled={pending || !text.trim()} aria-label="Send message"><Send size={20} /></button></div><small>Nothing is entered into your forms without your confirmation.</small></form>
       </>}
     </section>}

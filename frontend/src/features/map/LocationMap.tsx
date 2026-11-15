@@ -1,11 +1,296 @@
 import { useEffect, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { divIcon, DomEvent } from 'leaflet'
 import type { Map as LeafletMap } from 'leaflet'
 import { CircleMarker, MapContainer, Marker, Polygon, Polyline, ScaleControl, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import type { Location, UserRole } from '../../types'
 import { containsPoint, createBoundary, importBoundary, MAX_MAP_LAT, MAX_VERTICES, parseCoordinate, representativePoint, validateVertex, verticesOf } from '../parcel/geometry'
 import type { ParcelBoundary, Vertex } from '../parcel/geometry'
+
+// ── tile layer definitions ───────────────────────────────────────────────────
+
+type LayerId = 'street' | 'satellite' | 'terrain'
+
+interface TileLayerDef {
+  id: LayerId
+  label: string
+  url: string
+  attribution: string
+  maxNativeZoom: number
+}
+
+const TILE_LAYERS: TileLayerDef[] = [
+  {
+    id: 'street',
+    label: 'Street',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxNativeZoom: 19,
+  },
+  {
+    id: 'satellite',
+    label: 'Satellite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+    maxNativeZoom: 19,
+  },
+  {
+    id: 'terrain',
+    label: 'Terrain',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+    maxNativeZoom: 17,
+  },
+]
+
+// ── Layer Switcher (floating, top-right, inside map) ─────────────────────────
+
+function LayerSwitcher({ active, onChange }: { active: LayerId; onChange: (id: LayerId) => void }) {
+  return (
+    <div
+      className="layer-switcher"
+      style={{
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        background: 'rgba(255,255,255,0.95)',
+        border: '1px solid #ccc',
+        borderRadius: 6,
+        padding: '4px 6px',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span style={{ fontSize: '0.65em', fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Layer</span>
+      {TILE_LAYERS.map((layer) => (
+        <button
+          key={layer.id}
+          type="button"
+          onClick={() => onChange(layer.id)}
+          aria-pressed={active === layer.id}
+          style={{
+            fontSize: '0.78em',
+            padding: '3px 7px',
+            borderRadius: 4,
+            border: active === layer.id ? '2px solid #244a38' : '1px solid #aaa',
+            background: active === layer.id ? '#244a38' : '#f8f8f8',
+            color: active === layer.id ? '#fff' : '#333',
+            cursor: 'pointer',
+            fontWeight: active === layer.id ? 700 : 400,
+            lineHeight: 1.3,
+          }}
+        >
+          {layer.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Geolocation button (bottom-left inside map) ───────────────────────────────
+
+function GeolocationButton({ onSelect }: { onSelect: (location: Location) => void }) {
+  const map = useMap()
+  const [geoError, setGeoError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  function locate() {
+    if (!navigator.geolocation) { setGeoError('Geolocation not supported by this browser.'); return }
+    setBusy(true)
+    setGeoError('')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setBusy(false)
+        const lat = Number(pos.coords.latitude.toFixed(7))
+        const lon = Number(pos.coords.longitude.toFixed(7))
+        if (Math.abs(lat) > MAX_MAP_LAT) { setGeoError('Polar coordinates cannot be displayed.'); return }
+        map.setView([lat, lon], Math.max(map.getZoom(), 13), { animate: true })
+        onSelect({ lat, lon, source: 'map' })
+      },
+      (err) => {
+        setBusy(false)
+        if (err.code === err.PERMISSION_DENIED) setGeoError('Location permission denied.')
+        else setGeoError('Could not obtain location.')
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    )
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 32,
+          left: 10,
+          zIndex: 1000,
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={locate}
+          disabled={busy}
+          aria-label="Use my current location"
+          title="Use my current location"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 6,
+            border: '1px solid #aaa',
+            background: '#fff',
+            cursor: busy ? 'wait' : 'pointer',
+            fontSize: '1.1em',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+          }}
+        >
+          {busy ? '…' : '📍'}
+        </button>
+      </div>
+      {geoError && (
+        <div
+          role="alert"
+          style={{
+            position: 'absolute',
+            bottom: 72,
+            left: 10,
+            zIndex: 1000,
+            background: '#fff3cd',
+            border: '1px solid #f0ad4e',
+            borderRadius: 4,
+            padding: '3px 7px',
+            fontSize: '0.78em',
+            maxWidth: 220,
+            pointerEvents: 'none',
+          }}
+        >
+          {geoError}
+        </div>
+      )}
+    </>
+  )
+}
+
+// ── Place Search bar (top, full-width) ────────────────────────────────────────
+
+function PlaceSearch({ onSelect }: { onSelect: (location: Location) => void }) {
+  const map = useMap()
+  const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [notFound, setNotFound] = useState(false)
+
+  async function search(e: FormEvent) {
+    e.preventDefault()
+    const q = query.trim()
+    if (!q) return
+    setBusy(true)
+    setNotFound(false)
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&limit=1`
+      const res = await fetch(url, { headers: { Accept: 'application/json' } })
+      const data: { lat: string; lon: string }[] = await res.json()
+      if (!data.length) { setNotFound(true); return }
+      const lat = parseFloat(data[0].lat)
+      const lon = parseFloat(data[0].lon)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) { setNotFound(true); return }
+      map.flyTo([lat, lon], Math.max(map.getZoom(), 11), { animate: true })
+      onSelect({ lat: Number(lat.toFixed(7)), lon: Number(lon.toFixed(7)), source: 'map' })
+    } catch {
+      setNotFound(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function handleKey(e: KeyboardEvent<HTMLInputElement>) {
+    // Let the form submit handle Enter
+    if (e.key === 'Escape') setQuery('')
+  }
+
+  return (
+    <form
+      onSubmit={search}
+      aria-label="Search for a place"
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        position: 'absolute',
+        top: 10,
+        left: 50,
+        right: 110,
+        zIndex: 1000,
+        display: 'flex',
+        gap: 4,
+      }}
+    >
+      <input
+        type="search"
+        placeholder="Search place…"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setNotFound(false) }}
+        onKeyDown={handleKey}
+        aria-label="Place search"
+        style={{
+          flex: 1,
+          padding: '5px 8px',
+          borderRadius: 5,
+          border: '1px solid #aaa',
+          fontSize: '0.85em',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+          background: '#fff',
+        }}
+      />
+      <button
+        type="submit"
+        disabled={busy || !query.trim()}
+        style={{
+          padding: '5px 10px',
+          borderRadius: 5,
+          border: '1px solid #aaa',
+          background: '#244a38',
+          color: '#fff',
+          fontSize: '0.82em',
+          cursor: busy ? 'wait' : 'pointer',
+          whiteSpace: 'nowrap',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+        }}
+      >
+        {busy ? '…' : 'Search'}
+      </button>
+      {notFound && (
+        <span
+          role="status"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            marginTop: 2,
+            background: '#fff3cd',
+            border: '1px solid #f0ad4e',
+            borderRadius: 4,
+            padding: '2px 7px',
+            fontSize: '0.78em',
+            whiteSpace: 'nowrap',
+            zIndex: 1001,
+          }}
+        >
+          Not found
+        </span>
+      )}
+    </form>
+  )
+}
+
+// ── Map interaction (unchanged) ───────────────────────────────────────────────
 
 interface Props {
   location: Location | null
@@ -63,6 +348,8 @@ function VertexRow({ vertex, index, count, onUpdate, onRemove, onMove }: { verte
   </li>
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function LocationMap(props: Props) {
   const { location, onSelect, boundary, onSaveBoundary, storageMessage, role } = props
   const mapRef = useRef<LeafletMap | null>(null)
@@ -77,8 +364,13 @@ export default function LocationMap(props: Props) {
   const [announcement, setAnnouncement] = useState('')
   const [view, setView] = useState({ lat: 12, lon: -12, zoom: 2 })
   const [deleted, setDeleted] = useState<ParcelBoundary | null>(null)
+  const [activeLayer, setActiveLayer] = useState<LayerId>('street')
+
   useEffect(() => { setVertices(verticesOf(boundary)); setName(boundary?.properties.name || ''); setError('') }, [boundary])
   useEffect(() => { const frame = requestAnimationFrame(() => mapRef.current?.invalidateSize({ animate: false })); return () => cancelAnimationFrame(frame) }, [expanded])
+
+  const currentTile = TILE_LAYERS.find(l => l.id === activeLayer) ?? TILE_LAYERS[0]
+
   function add(vertex: Vertex) {
     try {
       validateVertex(vertex)
@@ -124,8 +416,25 @@ export default function LocationMap(props: Props) {
     <p className="map-instructions" id="map-help">{drawing ? 'Add corners in order. After three points, click or tap point 1 to close and save. You can also press Enter on point 1 or use Close and save field below.' : 'Click or tap to choose a query point. To outline your field, select Draw or edit field.'} Use arrow keys and +/− on the map to navigate. Every action also has an external control.</p>
     <div className={`map-frame ${expanded ? 'map-expanded' : ''} ${drawing ? 'drawing-mode' : ''}`} role="region" aria-label="World map for selecting a location" aria-describedby="map-help" onKeyDown={(event) => { if (event.key === 'Escape' && drawing) { setDrawing(false); setAnnouncement('Drawing paused. Your draft is preserved.') } }}>
       <MapContainer ref={mapRef} center={[12, -12]} zoom={2} minZoom={2} maxZoom={19} zoomControl={false} scrollWheelZoom={false} worldCopyJump maxBounds={[[-MAX_MAP_LAT, -Infinity], [MAX_MAP_LAT, Infinity]]}>
-        <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxNativeZoom={19} maxZoom={19} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' eventHandlers={{ tileerror: () => setTileError(true) }} />
+        <TileLayer
+          key={activeLayer}
+          url={currentTile.url}
+          maxNativeZoom={currentTile.maxNativeZoom}
+          maxZoom={19}
+          attribution={currentTile.attribution}
+          eventHandlers={{ tileerror: () => setTileError(true) }}
+        />
         <ZoomControl position="topleft" zoomInTitle="Zoom in" zoomOutTitle="Zoom out" /><ScaleControl position="bottomleft" imperial={false} />
+
+        {/* Layer switcher — floating top-right */}
+        <LayerSwitcher active={activeLayer} onChange={setActiveLayer} />
+
+        {/* Place search bar — floating top-centre */}
+        <PlaceSearch onSelect={onSelect} />
+
+        {/* Geolocation button — floating bottom-left */}
+        <GeolocationButton onSelect={onSelect} />
+
         <MapInteraction {...props} drawing={drawing} vertices={vertices} onClose={save} onAdd={add} onView={(center, zoom) => setView({ ...center, zoom })} />
         {boundary && <Polygon positions={verticesOf(boundary).map((vertex) => [vertex.lat, vertex.lon])} pathOptions={{ color: '#244a38', fillColor: '#a9c681', fillOpacity: drawing ? .08 : .23, weight: 3 }} interactive={false} />}
         {drawing && vertices.length >= 2 && <Polyline positions={vertices.map((vertex) => [vertex.lat, vertex.lon])} pathOptions={{ color: '#a05223', weight: 3, dashArray: '6 5' }} interactive={false} />}

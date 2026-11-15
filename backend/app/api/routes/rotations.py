@@ -6,13 +6,6 @@ from app.simulation.rotations import CROPS, CompareRequest, CompareResponse, com
 router = APIRouter(tags=["Rotations"])
 
 
-@router.get("/crops")
-def crops():
-    return {"crops": [{"id": key, "name": name} for key, name in CROPS.items()],
-            "source": "Demonstration catalogue of common crop names; no coefficients or regional suitability",
-            "limitations": ["Availability and suitability need local verification; this is not a complete agronomic catalogue."]}
-
-
 @router.post("/rotations/compare", response_model=CompareResponse)
 async def compare_rotations(request: CompareRequest):
     rainfall = None

@@ -1,11 +1,10 @@
 from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.simulation.rotations import ClimateReference, CompareRequest
 from app.assistant.charts import ChartArtifact
 
-View = Literal["overview", "parcel", "monitoring", "planning", "charts", "reports", "help"]
+View = Literal["overview", "parcel", "monitoring", "planning", "charts", "reports", "help", "crops"]
 
 
 class ProfilePatch(BaseModel):
@@ -33,6 +32,9 @@ class Context(BaseModel):
     parcel_area_ha: float | None = Field(default=None, gt=0, le=1_000_000, allow_inf_nan=False)
     climate: ClimateReference | None = None
     comparison: CompareRequest | None = None
+    country_code: str | None = None
+    country_name: str | None = None
+    region: str | None = None
 
 
 class HistoryMessage(BaseModel):
@@ -67,6 +69,28 @@ class Proposal(BaseModel):
         return self
 
 
+# Tool specs for function calling
+class CropDetailsSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    crop_id: str = Field(min_length=1, max_length=50)
+
+
+class CompareCropsSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    crop_ids: list[str] = Field(min_length=2, max_length=4)
+
+
+class EvaluateRotationSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    crops: list[str] = Field(min_length=3, max_length=6)
+
+
+class ScenarioSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rainfall_percent: int = Field(default=100, ge=0, le=200)
+    temperature_delta_c: float = Field(default=0.0, ge=-5.0, le=10.0)
+
+
 class ModelReply(BaseModel):
     model_config = ConfigDict(extra="forbid")
     message: str = Field(min_length=1, max_length=2000)
@@ -79,4 +103,4 @@ class ChatResponse(ModelReply):
     model: str
     evidence: Literal["verified_climate", "interface_only", "climate_unavailable"]
     charts: list[ChartArtifact] = Field(default_factory=list, max_length=3)
-    tool_steps: list[str] = Field(default_factory=list, max_length=6)
+    tool_steps: list[str] = Field(default_factory=list, max_length=8)

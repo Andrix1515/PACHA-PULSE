@@ -11,16 +11,20 @@ from app.api.routes.health import router as health_router
 from app.api.routes.observations import router as observations_router
 from app.api.routes.rotations import router as rotations_router
 from app.api.routes.assistant import router as assistant_router
+from app.api.routes.location import router as location_router
+from app.api.routes.crops import router as crops_router
 
 app = FastAPI(
     title="Pacha Pulse API",
-    version="0.1.0",
-    description="NASA POWER weather and structural crop rotation comparisons, without yield predictions.",
+    version="0.2.0",
+    description="Agricultural intelligence platform: location intelligence, soil, climate, dynamic crop catalog, and rotation engine.",
 )
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(observations_router, prefix="/api/v1")
 app.include_router(rotations_router, prefix="/api/v1")
 app.include_router(assistant_router, prefix="/api/v1")
+app.include_router(location_router, prefix="/api/v1")
+app.include_router(crops_router, prefix="/api/v1")
 
 
 @app.exception_handler(HTTPException)

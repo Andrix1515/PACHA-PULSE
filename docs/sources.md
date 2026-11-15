@@ -1,21 +1,93 @@
-# Sources
+# Data Sources and Provenance — Pacha-Pulse
 
-## Integrated data and cartography
+Every quantitative indicator in Pacha-Pulse preserves explicit data provenance:
+`source`, `provider_id`, `spatial_resolution`, `temporal_resolution`, `data_quality`, `status`, and `limitations`.
 
-- [NASA POWER daily API](https://power.larc.nasa.gov/docs/services/api/temporal/daily/): historical point temperature and precipitation. Parameters and units are checked at ingestion. Source URL, observation period, API version, retrieval date, quality and limitations accompany results.
-- Authentic saved observation: `backend/data/demo/power-mantaro-2025-01.raw.json`. Its adjacent `.source.json` records the original request, retrieval time, API version, coordinates and SHA-256. `synthetic` is false. Tests verify the raw file's hash. The record contains January 2025 daily values at -12.05, -75.2.
-- [OpenStreetMap attribution](https://www.openstreetmap.org/copyright) and [tile policy](https://operations.osmfoundation.org/policies/tiles/): standard map tiles. Mapping is distinct from NASA data coverage or parcel measurement.
-- User-drawn or imported GeoJSON: WGS84 geometry and approximate Turf spherical area. Field profiles and scenario selections are user inputs.
+---
 
-## Method references and pending integration
+## 1. NASA POWER (Daily Point Meteorology)
+- **Source**: NASA Prediction of Worldwide Energy Resources (POWER) Project.
+- **Provider**: NASA Langley Research Center (LaRC).
+- **Endpoint**: `https://power.larc.nasa.gov/api/temporal/daily/point`
+- **Variables**: `T2M` (°C), `T2M_MIN` (°C), `T2M_MAX` (°C), `PRECTOTCORR` (mm/day).
+- **Underlying model**: MERRA-2 global atmospheric assimilation blended with satellite observations.
+- **Spatial Resolution**: Nominal 0.5° latitude × 0.625° longitude grid cell.
+- **Caching**: Local SQLite cache (`observations.sqlite`).
+- **Authentic Saved Reference**: Mantaro Valley, Junín, Peru (-12.05°, -75.20°), January 2025 (31 days).
+- **Limitations**: Represents a regional grid cell, not an on-farm microclimate sensor; does not represent future forecasts or crop-available water.
 
-- [FAO-56](https://www.fao.org/4/x0490e/x0490e00.htm): ETc = Kc times ETo. Required inputs are missing, so no crop water-demand estimates are shown.
-- [MODIS MOD13Q1 v6.1](https://doi.org/10.5067/MODIS/MOD13Q1.061): planned vegetation product, not integrated. It must not be represented as functioning NDVI or parcel health in this demo.
+---
 
-## Assistant and deployment references
+## 2. OpenStreetMap & SRTM Elevation (Location Intelligence)
+- **Source**: OpenStreetMap Nominatim and SRTM / Copernicus 90m Digital Elevation Model.
+- **Endpoints**: `https://nominatim.openstreetmap.org/reverse`, `https://api.open-meteo.com/v1/elevation`
+- **Output**: Country code (ISO 3166-1 alpha-2), Country name, Administrative division, Hemisphere (Northern, Southern, Equatorial), Elevation (m.a.s.l.), Agro-climatic zone.
+- **Offline Fallback**: Bounding-box lookup for Peru, United States, Colombia, Kenya, Brazil, Spain, and India ensuring immediate offline functionality.
+- **Compliance**: Respectful User-Agent (`PachaPulse-AgroIntelligence/1.0`), caching, and timeout guards.
 
-- [Gemini models](https://aistudio.google.com/docs/models): configurable default `gemini-3.5-flash-lite`.
-- [Gemini Interactions API](https://aistudio.google.com/api-reference/interactions-api/create-interaction) and [structured output](https://aistudio.google.com/docs/structured-output), and [stateless function calling](https://aistudio.google.com/docs/function-calling#stateless-function-calling): bounded tool workflow, `store:false`, typed reply, deterministic chart tools and reviewable field proposals.
-- [Vercel Services](https://vercel.com/docs/services), [service configuration](https://vercel.com/docs/services/config-reference), [routing](https://vercel.com/docs/services/routing), and [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi): same-domain web/Python deployment preparation.
+---
 
-The panorama is reused unchanged from the user's design archive (`public/art/panorama.jpg` within the archive). It is an illustration, not an observation. The animated SVG/CSS character is adapted from the team-supplied Icon.jpeg. The original JPEG remains unchanged. The archive's fabricated measurements and fictional farmer identity are not imported.
+## 3. ISRIC SoilGrids v2.0 (Soil Physical & Chemical Properties)
+- **Source**: International Soil Reference and Information Centre (ISRIC).
+- **Service & Protocol**: ISRIC WCS 2.0.1 at `https://maps.isric.org/mapserv?map=/map/{property}.map`. The legacy REST endpoint (`rest.isric.org`) is suspended/deprecated.
+- **Decoding**: Real-time tiled GeoTIFF parser with Deflate decompression and horizontal differencing predictor reversal (`predictor=2`).
+- **Properties & Depths**:
+  - `phh2o`: Soil pH in H₂O (scale factor ×0.1; depths: 0-5cm, 5-15cm, 15-30cm)
+  - `soc`: Soil Organic Carbon (dg/kg -> %: scale factor ×0.01)
+  - `nitrogen`: Total Nitrogen (cg/kg -> g/kg: scale factor ×0.01)
+  - `clay`, `sand`, `silt`: Texture fractions (g/kg -> %: scale factor ×0.1)
+  - `bdod`: Bulk density of fine earth (cg/cm³ -> g/cm³: scale factor ×0.01)
+- **Derived Classification**: USDA Soil Texture Triangle (sand, loamy sand, sandy loam, loam, silt loam, silt, sandy clay loam, clay loam, silty clay loam, sandy clay, silty clay, clay).
+- **Spatial Resolution**: Nominal 250 m × 250 m grid cell.
+- **Fault Tolerance**: If a point is in ocean/polar gaps or server times out, variables report `unavailable` with explicit status. Never zero or invented.
+
+---
+
+## 4. FAO GAEZ v5 (Global Agro-Ecological Zones)
+- **Source**: Food and Agriculture Organization (FAO) & International Institute for Applied Systems Analysis (IIASA).
+- **Portal**: `https://gaez.fao.org/`
+- **Outputs**: Biophysical suitability classes (Very Suitable, Suitable, Moderately Suitable, Marginally Suitable, Not Suitable).
+- **Water Regimes**: Rainfed (RF) vs Irrigated (IR).
+- **Input Levels**: Intermediate vs High.
+- **Local Raster Adapter**: Official GAEZ GeoTIFF files can be placed in `backend/data/gaez/` for local pixel extraction.
+- **Scientific Limitation**: GAEZ suitability estimates biophysical agro-climatic potential; it does not predict actual farm yield or commercial profitability.
+
+---
+
+## 5. FAOSTAT (National Agricultural Statistics)
+- **Source**: Statistics Division of the Food and Agriculture Organization (FAO).
+- **Portal**: `https://www.fao.org/faostat/`
+- **Domain**: Crops and Livestock Products (QCL).
+- **Outputs**: Annual harvested area (ha), production volume (tonnes), and average yield (kg/ha) by country.
+- **Agronomic Rule**: High national production indicates established seed supply and market channels; it NEVER proves that a specific parcel has adequate microclimate or soil.
+
+---
+
+## 6. Copernicus ERA5-Land Reanalysis
+- **Source**: European Centre for Medium-Range Weather Forecasts (ECMWF) / Copernicus Climate Change Service (C3S).
+- **Portal**: `https://cds.climate.copernicus.eu/`
+- **Spatial Resolution**: 0.1° × 0.1° (~9 km grid cell).
+- **Methodology Distinction**: Physical land surface reanalysis (H-TESSEL) providing higher horizontal resolution in rugged terrain than MERRA-2 (50 km).
+- **Credentials**: Registered CDS users can supply `CDS_API_KEY` in `backend/.env`.
+
+---
+
+## 7. SENAMHI Peru (Regional In-Situ Weather Stations)
+- **Source**: Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI).
+- **Portal**: `https://www.senamhi.gob.pe/`
+- **Outputs**: Nearest surface weather station, station distance (km), altitude (m.a.s.l.), and climatological normals.
+- **Coverage**: Activated exclusively for coordinates within Peru (`country_code == 'PE'`); auto-disabled elsewhere.
+
+
+---
+
+## 8. Copernicus DEM & SRTM Terrain Service
+- **Source**: European Space Agency (ESA) Copernicus DEM (GLO-90) & NASA SRTM (GL1 30m).
+- **Service Endpoint**: `https://api.open-meteo.com/v1/elevation`
+- **Capabilities**:
+  - Point ground elevation (m.a.s.l.)
+  - Polygon multi-point terrain profiling (vertices + centroid)
+  - Relief variation (`elevation_max - elevation_min`)
+  - Slope gradient (% and degrees derived from relief and great-circle horizontal distance)
+  - Downslope drainage aspect (N, NE, E, SE, S, SW, W, NW, flat)
+- **Spatial Resolution**: 90 m (Copernicus DEM) / 30 m (SRTM).

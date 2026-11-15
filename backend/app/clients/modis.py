@@ -17,7 +17,9 @@ LIMITATIONS = [
 async def get_json(client, url, params=None):
     for attempt in range(3):
         try:
-            response = await client.get(url, params=params, headers={"Accept": "application/json", "User-Agent": "PachaPulse/0.3 point-subset"}, timeout=25)
+            # Cold ORNL subsets can exceed a browser's HTTP budget. This client
+            # runs in the offline worker, with bounded connect/read retries.
+            response = await client.get(url, params=params, headers={"Accept": "application/json", "User-Agent": "PachaPulse/0.3 point-subset"}, timeout=httpx.Timeout(90, connect=10))
             response.raise_for_status()
             if len(response.content) > 4_000_000:
                 raise ValueError("The MODIS response exceeds the point-subset limit.")

@@ -1,3 +1,7 @@
+## Reserve actual map control space - 2026-11-15
+
+Use a shared vertical flow for map context instead of independent top offsets. Collapse terrain detail until requested. A measured fit observes the companion, context and drawers to bound scrollable controls and keep the confirmation action accessible at smaller viewport sizes. Keep the private environment at the existing backend/.env lookup path; ignore all custom *.env filenames rather than broadening application configuration to arbitrary files. Verify Gemini independently of local NDVI inference.
+
 ## MODIS/ML implementation decisions - 2026-11-15
 
 Follow FINAL_PRODUCTION_SPEC_MODIS_ML_INGESTION locally, with explicit scientific corrections: HTTP triggers enqueue work rather than training; crop family/cover implies only an IPM review opportunity, not measured pesticide reduction; generic fixation does not imply purchased nitrogen savings. Use exact query-point model coverage, QA-preserving nulls, full historical weather features, chronological target purging, persistence gating and non-executable hashed JSON artifacts. Growers receive a small number of crop cards and a focused satellite lesson; agronomists retain complete observations and validation. Fix simulation identity memoization and calculate geometric quadrant areas independently of decorative plants. See MODIS_ML_IMPLEMENTATION.md.
@@ -48,6 +52,10 @@ Earlier Spanish documents were backed up in the ignored `.local/before-english` 
 11. Add a manual Charts workspace that works without AI. The model selects a supported chart configuration; the server computes all plotted values and provenance. Keep at most six labelled snapshots in session memory, separate from changing current-field state, and export them with reports.
 12. Provider registration runs during FastAPI import on Vercel, where the deployed code directory is read-only. GAEZ initialization only records the optional raster directory and must not create it; optional deployment-time files belong in the bundle, and runtime temporary files belong under `/tmp`.
 
+
+## Historical MODIS requests - 2026-11-15
+
+Move explicit period downloads out of HTTP into the existing SQLite/offline-worker queue. POST /observations/vegetation/sync returns 202 with stored observations and a point/period-specific job; the legacy GET refresh flag also queues. Read-only GET polls every three seconds while this panel is open. Queue identity includes point, job kind and both dates, independently of the full POWER/MODIS/model update. Eight bounded batches cover the demonstrated 2023–2025 period; no training runs in a history-only job. Successful historical batches, including empty responses, have durable checkpoints. Failed chunks are retried explicitly; dates newer than the publication allowance are not permanently checkpointed. Keep the existing ten-date ORNL request limit. Increase offline MODIS read timeout to 90 seconds with three bounded attempts (connect 10 seconds), after a real single-composite response took about 30 seconds. This does not increase the browser wait for source retrieval. Preserve exact-point isolation, QA masks and nulls.
 
 ## Local branch integration - 2026-11-15
 

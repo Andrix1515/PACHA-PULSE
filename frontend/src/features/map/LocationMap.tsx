@@ -122,6 +122,7 @@ export default function LocationMap(props: Props) {
   const [announcement, setAnnouncement] = useState('')
   const [view, setView] = useState({ lat: 12, lon: -12, zoom: 2 })
   const [toolsOpen, setToolsOpen] = useState(false)
+  const editor = useRef<HTMLDivElement>(null)
   const [locating, setLocating] = useState(false)
   useEffect(() => { onState?.(drawing, vertices.length) }, [drawing, vertices.length, onState])
   const [deleted, setDeleted] = useState<ParcelBoundary | null>(null)
@@ -167,21 +168,93 @@ export default function LocationMap(props: Props) {
     } catch (caught) { setError(caught instanceof SyntaxError ? 'The file does not contain valid JSON.' : caught instanceof Error ? caught.message : 'The file could not be imported.') }
   }
   const outside = boundary && location && !containsPoint(boundary, location)
+  useEffect(() => {
+    if (!immersive) return
+    let frame = 0
+    const observed = new Set<Element>()
+    const fit = () => {
+      const stack = editor.current?.querySelector<HTMLElement>('.map-context-stack')
+      if (!stack || !stack.getBoundingClientRect().width) return
+      let rect = stack.getBoundingClientRect()
+      const drawer = editor.current?.querySelector<HTMLElement>('.field-tools-drawer')
+      const companion = document.querySelector('.pacha-stage')?.getBoundingClientRect()
+      const confirmation = document.querySelector<HTMLElement>('.field-confirm-bar')
+      let confirm = confirmation?.getBoundingClientRect()
+      if (innerWidth > 760 && companion?.width && companion.left > rect.left + 260) {
+        stack.style.width = `${Math.min(610, Math.floor(companion.left - rect.left - 24))}px`
+        rect = stack.getBoundingClientRect()
+        if (confirmation && confirm) {
+          confirmation.style.maxWidth = `${Math.max(260, Math.floor(companion.left - confirm.left - 24))}px`
+          confirm = confirmation.getBoundingClientRect()
+        }
+      } else { stack.style.width = ''; if (confirmation) confirmation.style.maxWidth = '' }
+      if (drawer) {
+        if (toolsOpen) { drawer.style.top = ''; drawer.style.bottom = ''; drawer.style.width = ''; drawer.style.minWidth = '' }
+        else {
+          if (innerWidth <= 760) {
+            const left = drawer.getBoundingClientRect().left
+            const edges = Array.from(editor.current!.querySelectorAll('.leaflet-control-zoom, .leaflet-control-scale')).map((node) => node.getBoundingClientRect()).filter((box) => box.width && box.left > left)
+            const limit = Math.min(...edges.map((box) => box.left), innerWidth - 20)
+            drawer.style.width = `${Math.max(80, Math.min(200, Math.floor(limit - left - 14)))}px`
+            drawer.style.minWidth = '0'
+          } else { drawer.style.width = ''; drawer.style.minWidth = '' }
+          const box = drawer.getBoundingClientRect()
+          let lowerEdge = confirm?.top ? confirm.top - 14 : innerHeight - 110
+          if (companion?.width && companion.right > box.left && companion.left < box.right) lowerEdge = Math.min(lowerEdge, companion.top - 14)
+          drawer.style.top = `${Math.max(0, Math.floor(lowerEdge - box.height - editor.current!.getBoundingClientRect().top))}px`
+          drawer.style.bottom = 'auto'
+        }
+      }
+      const controls = editor.current?.querySelectorAll<HTMLElement>('.leaflet-top')
+      controls?.forEach((control) => {
+        if (!observed.has(control)) { observed.add(control); observer.observe(control) }
+        if (innerWidth <= 760 && !toolsOpen && drawer) {
+          const child = control.querySelector<HTMLElement>('.leaflet-control')
+          if (!child) return
+          if (!observed.has(child)) { observed.add(child); observer.observe(child) }
+          const row = drawer.getBoundingClientRect(), box = control.getBoundingClientRect(), visible = child.getBoundingClientRect()
+          const top = control.classList.contains('leaflet-left') ? row.bottom - (visible.bottom - box.top) : row.top + (row.height - visible.height) / 2 - (visible.top - box.top)
+          control.style.top = `${Math.max(0, Math.floor(top - editor.current!.getBoundingClientRect().top))}px`
+        } else control.style.top = ''
+      })
+      let bottom = innerHeight - 20
+      const obstacles = [editor.current?.querySelector('.field-tools-drawer'), document.querySelector('.field-confirm-bar'), document.querySelector('.pacha-stage')]
+      obstacles.forEach((node) => {
+        if (!node) return
+        if (!observed.has(node)) { observed.add(node); observer.observe(node) }
+        const box = node.getBoundingClientRect()
+        if (box.width && box.height && box.right > rect.left && box.left < rect.right && box.top > rect.top) bottom = Math.min(bottom, box.top - 14)
+      })
+      const height = `${Math.max(80, Math.floor(bottom - rect.top))}px`
+      if (stack.style.maxHeight !== height) stack.style.maxHeight = height
+      dispatchEvent(new Event('pacha:map-layout'))
+    }
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(fit) }
+    const observer = new ResizeObserver(schedule)
+    if (editor.current) observer.observe(editor.current)
+    const stack = editor.current?.querySelector('.map-context-stack'); if (stack) observer.observe(stack)
+    addEventListener('resize', schedule); addEventListener('scroll', schedule, { passive: true }); schedule()
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); removeEventListener('resize', schedule); removeEventListener('scroll', schedule) }
+  }, [immersive, toolsOpen, drawing])
+
   function findLocation() {
     if (!navigator.geolocation) { setError('Device location is unavailable. Use the map or Field tools to enter coordinates.'); setToolsOpen(true); return }
     setLocating(true); setError('')
     navigator.geolocation.getCurrentPosition((position) => { onSelect({ lat: position.coords.latitude, lon: position.coords.longitude, source: 'manual' }); setLocating(false); setAnnouncement('Device location selected. Check the point on the map before continuing.'); mapRef.current?.setView([position.coords.latitude, position.coords.longitude], 16, { animate: false }) }, () => { setLocating(false); setError('Location could not be accessed. You can still select your field on the map or enter coordinates in Field tools.') }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 })
   }
-  return <div className={`parcel-map-editor ${immersive ? 'immersive-map' : ''}`}>
+  return <div ref={editor} className={`parcel-map-editor ${immersive ? 'immersive-map' : ''}`}>
+    {immersive && <section className="map-context-stack" aria-label="Find and explore your field">
+      <div className="field-scene-title"><span className="eyebrow">A PLACE TO BEGIN</span><h1 id="field-scene-heading" tabIndex={-1}>Find your field.</h1></div>
     {immersive && <PlaceSearch onChoose={(place) => { if (place.bounds) mapRef.current?.fitBounds(place.bounds, { padding: [70, 70], maxZoom: 13, animate: !matchMedia('(prefers-reduced-motion: reduce)').matches }); else mapRef.current?.setView([Math.max(-MAX_MAP_LAT, Math.min(MAX_MAP_LAT, place.lat)), place.lon], place.kind === 'country' ? 5 : 9, { animate: false }); setAnnouncement(`Browsing ${place.label}. Select your actual field to change the query point.`) }} />}
-    {immersive && !drawing && location && onEvidence && <aside className="field-terrain-glance" aria-label="Terrain at selected point">
+    {immersive && <div className="field-quick-tools" role="group" aria-label="Field actions"><button type="button" onClick={findLocation} disabled={locating}>{locating ? 'Finding your location...' : 'Find my location'}</button><button type="button" aria-pressed={drawing} onClick={() => { setDrawing(!drawing); setAnnouncement(drawing ? 'Drawing paused. Your draft is preserved.' : 'Tap each corner, then tap point 1 to close your field.') }}>{drawing ? 'Pause drawing' : 'Draw my field'}</button>{drawing && <button type="button" disabled={!vertices.length} onClick={() => setVertices((current) => current.slice(0, -1))}>Undo point</button>}{!drawing && onExplore && <button type="button" disabled={!boundary} title={boundary ? 'Explore your saved outline' : 'Save an outline to explore it in 3D'} onClick={onExplore}>Explore in 3D</button>}{!drawing && onCrops && <button type="button" onClick={onCrops}>Crop guide</button>}</div>}
+    {immersive && !drawing && location && onEvidence && <details className="field-terrain-glance" aria-label="Terrain at selected point"><summary>Terrain summary</summary><div className="terrain-summary-content">
       <div><span>Elevation</span><strong>{terrain?.elevation_m == null ? 'Not checked' : `${terrain.elevation_m.toFixed(0)} m`}</strong></div>
       <div><span>Sampled slope</span><strong>{terrain?.slope_percent == null ? 'Not checked' : `${terrain.slope_percent.toFixed(1)}%`}</strong></div>
       {terrain && <small>{terrain.provenance.spatial_resolution} · estimate, not a field survey</small>}
       {!terrain && <small>Read DEM estimates for this point and outline.</small>}
       <button type="button" onClick={onEvidence}>{terrain ? 'See terrain details' : 'Check terrain'} </button>
-    </aside>}
-    {immersive && <div className="field-quick-tools" role="group" aria-label="Field actions"><button type="button" onClick={findLocation} disabled={locating}>{locating ? 'Finding your location...' : 'Find my location'}</button><button type="button" aria-pressed={drawing} onClick={() => { setDrawing(!drawing); setAnnouncement(drawing ? 'Drawing paused. Your draft is preserved.' : 'Tap each corner, then tap point 1 to close your field.') }}>{drawing ? 'Pause drawing' : 'Draw my field'}</button>{drawing && <button type="button" disabled={!vertices.length} onClick={() => setVertices((current) => current.slice(0, -1))}>Undo point</button>}{!drawing && onExplore && <button type="button" disabled={!boundary} title={boundary ? 'Explore your saved outline' : 'Save an outline to explore it in 3D'} onClick={onExplore}>Explore in 3D</button>}{!drawing && onCrops && <button type="button" onClick={onCrops}>Crop guide</button>}</div>}
+    </div></details>}
+    </section>}
     <div hidden={immersive}>
     <div className="map-toolbar" role="group" aria-label="Map tools"><button type="button" aria-pressed={!drawing} onClick={() => { setDrawing(false); setAnnouncement('Query point mode. Your draft is preserved.') }}>Choose query point</button><button id="parcel-draw-toggle" type="button" aria-pressed={drawing} onClick={() => { setDrawing(true); setAnnouncement('Drawing mode. Add points with clicks, taps, coordinates or the map center.') }}>Draw or edit field</button><button type="button" onClick={() => { setVertices([]); setName(''); setDrawing(true); setError(''); setAnnouncement('New draft. The saved field stays unchanged until you confirm its replacement.') }}>New outline</button><button type="button" onClick={() => setExpanded(!expanded)} aria-pressed={expanded}>{expanded ? 'Reduce map' : 'Expand map'}</button></div>
     <p className="map-instructions" id="map-help">{drawing ? 'Add corners in order. After three points, click or tap point 1 to close and save. You can also press Enter on point 1 or use Close and save field below.' : 'Click or tap to choose a query point. To outline your field, select Draw or edit field.'} Use arrow keys and +/− on the map to navigate. Every action also has an external control.</p>

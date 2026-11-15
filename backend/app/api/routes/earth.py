@@ -4,7 +4,7 @@ from fastapi import APIRouter,Query,HTTPException
 from pydantic import BaseModel,Field,ConfigDict,model_validator
 from app.providers.modis import MODISService
 from app.ml.predictor import predict_ndvi,model_status
-from app.ingestion.store import ObservationStore
+from app.ingestion.store import ObservationStore, IngestionQueueFull
 from app.monitoring import analyze
 
 router=APIRouter(tags=["Vegetation and offline adaptive ML"])
@@ -36,7 +36,18 @@ class PredictionRequest(PointRequest):
 async def vegetation(lat:float=Query(ge=-90,le=90,allow_inf_nan=False),lon:float=Query(ge=-180,le=180,allow_inf_nan=False),start:date=Query(),end:date=Query(),refresh:bool=False):
     if start>end or (end-start).days>1096:
         raise HTTPException(422,"Invalid MODIS period.")
-    return await modis_service.series(lat,lon,start,end,refresh)
+    try:
+        return await modis_service.series(lat,lon,start,end,refresh)
+    except IngestionQueueFull as exc:
+        raise HTTPException(429,str(exc))
+
+
+@router.post("/observations/vegetation/sync", status_code=202)
+async def vegetation_sync(request:PeriodRequest):
+    try:
+        return await modis_service.series(request.lat,request.lon,request.start,request.end,refresh=True)
+    except IngestionQueueFull as exc:
+        raise HTTPException(429,str(exc))
 
 
 @router.post("/monitoring/analyze")

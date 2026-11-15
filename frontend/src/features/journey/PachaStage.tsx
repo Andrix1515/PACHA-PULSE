@@ -40,9 +40,16 @@ export default function PachaStage({ scene, focus = scene, guidance, guided, pau
         const anchor = positions[focus] || positions[scene]
         if (bubbleRect && bubbleRect.width > 0) {
           if (!bubbleAbove) {
-            const availTop = Math.max(135, bubbleRect.top - 84)
+            let safeTop = 76
+            if (scene === 'field') {
+              document.querySelectorAll('.immersive-map .leaflet-control-zoom, .immersive-map .leaflet-control-scale').forEach((control) => {
+                const box = control.getBoundingClientRect()
+                if (box.width && box.height) safeTop = Math.max(safeTop, box.bottom + 14)
+              })
+            }
+            const availTop = Math.max(70, bubbleRect.top - safeTop - 12)
             size = Math.min(size, Math.floor(availTop / 1.35))
-            y = Math.max(76, bubbleRect.top - size * 1.35 - 12)
+            y = Math.max(safeTop, bubbleRect.top - size * 1.35 - 12)
           } else {
             const minTop = bubbleRect.bottom + 18
             const availHeight = Math.max(135, height - minTop - 16)
@@ -76,12 +83,12 @@ export default function PachaStage({ scene, focus = scene, guidance, guided, pau
     position(true)
     const resize = () => position(false)
     const scroll = () => { if (innerWidth <= 760) position(false) }
-    addEventListener('resize', resize); addEventListener('scroll', scroll, { passive: true }); reduced.addEventListener('change', resize)
+    addEventListener('resize', resize); addEventListener('pacha:map-layout', resize); addEventListener('scroll', scroll, { passive: true }); reduced.addEventListener('change', resize)
     let firstObservation = true
     const observer = new ResizeObserver(() => { if (firstObservation) { firstObservation = false; return }; resize() })
     if (pocket.current) observer.observe(pocket.current)
     if (bubble.current) observer.observe(bubble.current)
-    return () => { observer.disconnect(); removeEventListener('resize', resize); removeEventListener('scroll', scroll); reduced.removeEventListener('change', resize) }
+    return () => { observer.disconnect(); removeEventListener('resize', resize); removeEventListener('pacha:map-layout', resize); removeEventListener('scroll', scroll); reduced.removeEventListener('change', resize) }
   }, [scene, focus, paused, resting, guided, expanded, role])
   useEffect(() => () => animation.current?.cancel(), [])
   const expression: PachaMood = travelling ? 'travel' : focus === 'temperature' ? 'curious' : focus === 'crop' || focus === 'alternative_a' ? 'point' : guidance.mood

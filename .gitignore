@@ -17,3 +17,6 @@ playwright-report/
 
 # Supplied design archive stays local; selected visual assets are in frontend/public.
 design.zip
+
+# Local environment files can have custom names.
+*.env

@@ -1,7 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
-from app.clients.modis import SOURCE, LIMITATIONS, normalize, fetch_raw
+from app.clients.modis import SOURCE, LIMITATIONS, normalize
 from app.ingestion.store import ObservationStore, MODIS
 from app.providers.base import BaseProvider, ProviderMetadata, ProviderStatus, DataSourceType
 
@@ -30,12 +30,9 @@ class MODISService(BaseProvider):
         store = store or ObservationStore()
         warnings = []
         if refresh:
-            try:
-                raw = await fetch_raw(lat, lon, start, end)
-                store.put(MODIS, "061", lat, lon, normalize(raw))
-            except Exception as exc:
-                warnings.append(f"MODIS source unavailable: {type(exc).__name__}. Stored observations remain accessible.")
-                self.mark_error(warnings[-1])
+            # HTTP only queues work; even a multi-year request returns immediately.
+            store.enqueue(lat, lon, start=start, end=end, kind="modis_period")
+        job = store.period_job(lat, lon, start, end)
         rows = store.rows(MODIS, lat, lon, start, end)
         delivery = "ingested"
         if not rows:
@@ -44,4 +41,4 @@ class MODISService(BaseProvider):
         if rows:
             self.mark_success()
         values = [row["ndvi"] for row in rows if row["ndvi"] is not None]
-        return {"lat": lat, "lon": lon, "start": str(start), "end": str(end), "source": SOURCE, "product_version": "061", "status": "observed" if rows else "unavailable", "delivery": delivery if rows else "unavailable", "unit": "NDVI/EVI dimensionless ratio", "observed_at": f"{start}/{end}", "spatial_resolution": "Nominal 250 m", "retrieved_at": max((row["retrieved_at"] for row in rows), default=None), "quality": "complete" if rows and len(values) == len(rows) else "partial" if values else "unavailable", "data": rows, "summary": {"ndvi_mean": sum(values)/len(values) if values else None, "ndvi_min": min(values) if values else None, "ndvi_max": max(values) if values else None, "valid_composites_count": len(values), "cloudy_composites_count": len(rows)-len(values)}, "limitations": LIMITATIONS + warnings}
+        return {"ingestion_job": job, "lat": lat, "lon": lon, "start": str(start), "end": str(end), "source": SOURCE, "product_version": "061", "status": "observed" if rows else "unavailable", "delivery": delivery if rows else "unavailable", "unit": "NDVI/EVI dimensionless ratio", "observed_at": f"{start}/{end}", "spatial_resolution": "Nominal 250 m", "retrieved_at": max((row["retrieved_at"] for row in rows), default=None), "quality": "complete" if rows and len(values) == len(rows) else "partial" if values else "unavailable", "data": rows, "summary": {"ndvi_mean": sum(values)/len(values) if values else None, "ndvi_min": min(values) if values else None, "ndvi_max": max(values) if values else None, "valid_composites_count": len(values), "cloudy_composites_count": len(rows)-len(values)}, "limitations": LIMITATIONS + warnings}

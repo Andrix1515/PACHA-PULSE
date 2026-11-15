@@ -71,6 +71,7 @@ test('main terrain and soil contracts reach guided scenes, layer selection prese
   await expect(page.locator('.field-terrain-glance')).toContainText('0 m')
   await expect(page.locator('.field-terrain-glance')).toContainText('0.0%')
   await page.getByText('Field tools', { exact:true }).click()
+  await page.getByText('Terrain summary',{exact:true}).click()
   await page.getByRole('button', {name:'See terrain details',exact:true}).click()
   await expect(page.locator('.journey-shell')).toHaveAttribute('data-scene','evidence')
   await expect(page.getByRole('button',{name:'Terrain',exact:true})).toHaveAttribute('aria-pressed','true')

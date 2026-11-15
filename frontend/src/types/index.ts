@@ -328,7 +328,11 @@ export interface TerrainInfo {
 }
 
 
+export interface VegetationIngestionJob {
+ id:number;status:'queued'|'running'|'complete'|'partial'|'failed';requested_at:string;finished_at:string|null;error:string|null;completed_batches:number;total_batches:number
+}
 export interface VegetationResponse {
+ ingestion_job?:VegetationIngestionJob|null;
  lat:number;lon:number;start:string;end:string;source:string;product_version:string;status:'observed'|'unavailable';delivery:string;spatial_resolution:string;retrieved_at:string|null;quality:string;limitations:string[];
  data:{date:string;period_end:string;ndvi:number|null;evi:number|null;pixel_reliability:number|null;quality:string;retrieved_at:string;request_url:string}[];
  summary:{ndvi_mean:number|null;ndvi_min:number|null;ndvi_max:number|null;valid_composites_count:number;cloudy_composites_count:number}

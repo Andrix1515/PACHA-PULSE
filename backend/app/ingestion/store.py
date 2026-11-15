@@ -8,6 +8,10 @@ POWER = "NASA_POWER"
 MODIS = "NASA_MODIS_MOD13Q1"
 
 
+class IngestionQueueFull(ValueError):
+    pass
+
+
 def cell_key(lat, lon):
     # Query identity, not a claim to know the satellite pixel's footprint.
     return f"{float(lat):.8f}:{float(lon):.8f}"
@@ -34,7 +38,17 @@ class ObservationStore:
         CREATE TABLE IF NOT EXISTS ingestion_jobs (
             id INTEGER PRIMARY KEY, cell_id TEXT NOT NULL, lat REAL, lon REAL,
             status TEXT NOT NULL, requested_at TEXT NOT NULL, finished_at TEXT, error TEXT);
+        CREATE TABLE IF NOT EXISTS modis_completed_batches (
+            cell_id TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL,
+            finished_at TEXT NOT NULL, PRIMARY KEY(cell_id,start_date,end_date));
         """)
+        # Additive migration for local databases created before period jobs existed.
+        conn.execute("BEGIN IMMEDIATE")
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(ingestion_jobs)")}
+        for name, definition in {"kind": "TEXT NOT NULL DEFAULT 'full'", "start_date": "TEXT", "end_date": "TEXT", "completed_batches": "INTEGER NOT NULL DEFAULT 0", "total_batches": "INTEGER NOT NULL DEFAULT 0"}.items():
+            if name not in columns:
+                conn.execute(f"ALTER TABLE ingestion_jobs ADD COLUMN {name} {definition}")
+        conn.commit()
         return conn
 
     def rows(self, source, lat, lon, start="0001-01-01", end="9999-12-31"):
@@ -54,15 +68,23 @@ class ObservationStore:
         rows = self.rows(source, lat, lon)
         return rows[-1]["date"] if rows else None
 
-    def enqueue(self, lat, lon):
+    def enqueue(self, lat, lon, *, start=None, end=None, kind="full"):
+        if kind not in ("full", "modis_period") or (kind == "modis_period" and (start is None or end is None)):
+            raise ValueError("A MODIS period update needs both dates.")
+        start, end = (str(start), str(end)) if kind == "modis_period" else (None, None)
         with self.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
-            existing = conn.execute("SELECT id FROM ingestion_jobs WHERE cell_id=? AND status IN ('queued','running')", (cell_key(lat, lon),)).fetchone()
+            existing = conn.execute("SELECT id FROM ingestion_jobs WHERE cell_id=? AND kind=? AND start_date IS ? AND end_date IS ? AND status IN ('queued','running')", (cell_key(lat, lon), kind, start, end)).fetchone()
             if existing:
                 return existing[0]
             if conn.execute("SELECT COUNT(*) FROM ingestion_jobs WHERE status IN ('queued','running')").fetchone()[0] >= 20:
-                raise ValueError("The local update queue is full. Try later.")
-            return conn.execute("INSERT INTO ingestion_jobs(cell_id,lat,lon,status,requested_at) VALUES (?,?,?,'queued',?)", (cell_key(lat, lon), lat, lon, datetime.now(timezone.utc).isoformat())).lastrowid
+                raise IngestionQueueFull("The local update queue is full. Try later.")
+            return conn.execute("INSERT INTO ingestion_jobs(cell_id,lat,lon,status,requested_at,kind,start_date,end_date) VALUES (?,?,?,'queued',?,?,?,?)", (cell_key(lat, lon), lat, lon, datetime.now(timezone.utc).isoformat(), kind, start, end)).lastrowid
+
+    def period_job(self, lat, lon, start, end):
+        with self.connect() as conn:
+            row = conn.execute("SELECT id,status,requested_at,finished_at,error,completed_batches,total_batches FROM ingestion_jobs WHERE cell_id=? AND kind='modis_period' AND start_date=? AND end_date=? ORDER BY id DESC LIMIT 1", (cell_key(lat, lon), str(start), str(end))).fetchone()
+        return dict(row) if row else None
 
     def sync_status(self, lat, lon):
         with self.connect() as conn:

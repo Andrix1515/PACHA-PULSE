@@ -2,13 +2,15 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MessageCircle, Pause, Play, Sparkles } from 'lucide-react'
 import Pacha3D from '../assistant/Pacha3D'
 import type { PachaMood } from '../assistant/pachaModel'
+import type { UserRole } from '../../types'
 import type { Guidance, Scene } from './journey'
 
-export default function PachaStage({ scene, focus = scene, guidance, guided, paused, resting = false, onPause, onAsk }: { scene: Scene; focus?: string; guidance: Guidance; guided: boolean; paused: boolean; resting?: boolean; onPause: () => void; onAsk: () => void }) {
+export default function PachaStage({ scene, focus = scene, guidance, guided, paused, resting = false, role = 'grower', onPause, onAsk }: { scene: Scene; focus?: string; guidance: Guidance; guided: boolean; paused: boolean; resting?: boolean; role?: UserRole | null; onPause: () => void; onAsk: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [travelling, setTravelling] = useState(false)
   const avatar = useRef<HTMLDivElement>(null)
   const pocket = useRef<HTMLDivElement>(null)
+  const bubble = useRef<HTMLDivElement>(null)
   const animation = useRef<Animation | null>(null)
   const positioned = useRef(false)
   useEffect(() => { setExpanded(false) }, [scene, guidance.title])
@@ -22,21 +24,34 @@ export default function PachaStage({ scene, focus = scene, guidance, guided, pau
       let x: number, y: number, size: number
       if (width <= 760) {
         const rect = pocket.current.getBoundingClientRect()
-        const docked = rect.bottom < 75
-        element.dataset.docked = String(docked)
-        size = docked ? 48 : rect.width; x = docked ? width - 63 : rect.left; y = docked ? 80 : rect.top
+        element.dataset.docked = 'false'
+        size = rect.width || 68
+        x = rect.left
+        y = rect.top
       } else {
-        size = width < 1050 ? 155 : 210
+        const bubbleRect = bubble.current?.getBoundingClientRect()
+        size = scene === 'welcome' ? (width < 1050 ? 215 : 255) : scene === 'field' ? (width < 1050 ? 145 : 175) : (width < 1050 ? 155 : 195)
         const positions: Record<string, [number, number]> = {
-          evidence: [.82, .60], crops: [.80, .60], soil: [.82, .60], terrain: [.78, .62], sources: [.84, .60], candidate_review: [.80, .60], welcome: [.80, .20], field: [.85, .18], profile: [.83, .60], climate: [.77, .60], planning: [.80, .60], charts: [.82, .64], summary: [.80, .58], help: [.82, .60],
-          naming: [.82, .60], crop: [.76, .55], water: [.87, .64], rainfall: [.75, .62], temperature: [.86, .61], meaning: [.78, .66],
-          baseline: [.79, .62], alternative_a: [.86, .61], alternative_b: [.75, .64], scenario: [.84, .62], results: [.77, .63], exploring_3d: [.70, .16], drawing: [.85, .18],
+          evidence: [.82, .56], crops: [.80, .56], soil: [.83, .57], terrain: [.79, .58], sources: [.84, .56], candidate_review: [.80, .56], welcome: [.80, .16], field: [.86, .52], profile: [.83, .56], climate: [.79, .56], planning: [.81, .56], charts: [.82, .58], summary: [.80, .55], help: [.82, .56],
+          naming: [.82, .56], crop: [.78, .54], water: [.85, .58], rainfall: [.78, .57], temperature: [.85, .56], meaning: [.80, .59],
+          baseline: [.80, .57], alternative_a: [.85, .56], alternative_b: [.78, .58], scenario: [.84, .57], results: [.79, .58], exploring_3d: [.84, .48], drawing: [.86, .52],
         }
         const anchor = positions[focus] || positions[scene]
-        x = Math.min(width - size - 20, Math.max(width * .66, width * anchor[0] - size / 2))
-        y = Math.min(height - size * 1.35 - 65, Math.max(95, height * anchor[1]))
-        if (scene === 'welcome') size = width < 1050 ? 225 : 290
-        x = Math.min(x, width - size - 24)
+        if (bubbleRect && bubbleRect.width > 0) {
+          const minX = Math.max(width * .62, bubbleRect.left - 10)
+          const maxX = Math.min(width - size - 20, bubbleRect.right - size + 10)
+          const ratio = Math.max(0, Math.min(1, (anchor[0] - .75) / .12))
+          x = minX + (maxX - minX) * ratio
+          if (scene === 'welcome' || scene === 'field') {
+            y = Math.max(88, bubbleRect.top - size * 1.24 - 12)
+          } else {
+            const minTop = bubbleRect.bottom + 18
+            y = Math.max(minTop, Math.min(height - size * 1.32 - 24, Math.max(minTop, height * anchor[1])))
+          }
+        } else {
+          x = Math.min(width - size - 24, Math.max(width * .66, width * anchor[0] - size / 2))
+          y = Math.min(height - size * 1.35 - 65, Math.max(95, height * anchor[1]))
+        }
       }
       animation.current?.cancel(); animation.current = null
       element.style.setProperty('--pacha-left', `${x}px`); element.style.setProperty('--pacha-top', `${y}px`); element.style.width = `${size}px`; element.style.height = `${size * 1.35}px`
@@ -58,20 +73,24 @@ export default function PachaStage({ scene, focus = scene, guidance, guided, pau
     const scroll = () => { if (innerWidth <= 760) position(false) }
     addEventListener('resize', resize); addEventListener('scroll', scroll, { passive: true }); reduced.addEventListener('change', resize)
     let firstObservation = true
-    const observer = new ResizeObserver(() => { if (firstObservation) { firstObservation = false; return }; resize() }); if (pocket.current) observer.observe(pocket.current)
+    const observer = new ResizeObserver(() => { if (firstObservation) { firstObservation = false; return }; resize() })
+    if (pocket.current) observer.observe(pocket.current)
+    if (bubble.current) observer.observe(bubble.current)
     return () => { observer.disconnect(); removeEventListener('resize', resize); removeEventListener('scroll', scroll); reduced.removeEventListener('change', resize) }
-  }, [scene, focus, paused, resting, guided, expanded])
+  }, [scene, focus, paused, resting, guided, expanded, role])
   useEffect(() => () => animation.current?.cancel(), [])
   const expression: PachaMood = travelling ? 'travel' : focus === 'temperature' ? 'curious' : focus === 'crop' || focus === 'alternative_a' ? 'point' : guidance.mood
-  return <aside className={`pacha-stage ${guided ? 'is-guided' : 'is-quiet'}`} data-focus={focus} data-scene={scene} aria-label="Pacha's guidance">
+  const bubbleAbove = scene !== 'welcome' && scene !== 'field'
+  return <aside className={`pacha-stage ${guided ? 'is-guided' : 'is-quiet'} ${bubbleAbove ? 'bubble-above' : 'bubble-below'}`} data-focus={focus} data-scene={scene} data-role={role || 'grower'} aria-label="Pacha's guidance">
     <div className="pacha-avatar-pocket" ref={pocket} aria-hidden="true" />
     <div ref={avatar} className={`pacha-stage-character ${travelling ? 'is-travelling' : ''}`} data-travelling={travelling}>
       <Pacha3D mood={expression} paused={paused || resting} />
       <button className="character-motion-control icon-button" aria-label={paused ? 'Enable animations' : 'Pause animations'} aria-pressed={paused} onClick={onPause}>{paused ? <Play size={15} /> : <Pause size={15} />}</button>
     </div>
-    <div className="pacha-story-bubble">
-      <span className="pacha-name"><span className="pacha-presence-dot" />PACHA · YOUR FIELD COMPANION</span>
-      {guided ? <><div className="pacha-story-copy" role="status" aria-live="polite" aria-atomic="true"><h2>{guidance.title}</h2><p>{expanded ? guidance.extra : guidance.text}</p></div><div className="pacha-story-actions"><button className="text-button" onClick={() => setExpanded(!expanded)}><Sparkles size={14} />{expanded ? 'Back to the small step' : 'Explain a little more'}</button><button id="pacha-chat-trigger" className="pacha-ask-button" onClick={onAsk} aria-label="Ask Pacha"><MessageCircle size={16} /><span>Ask Pacha</span></button></div></> : <><p className="pacha-quiet-copy">I am here whenever you need a hand.</p><button id="pacha-chat-trigger" className="pacha-ask-button" onClick={onAsk} aria-label="Ask Pacha"><MessageCircle size={16} />Ask Pacha</button></>}
+    <div ref={bubble} className="pacha-story-bubble pacha-cloud-bubble">
+      <span className="pacha-cloud-tail" aria-hidden="true"><span /><span /><span /></span>
+      <span className="pacha-name"><span className="pacha-presence-dot" />{role === 'agronomist' ? 'PACHA · TECHNICAL ADVISOR VIEW' : 'PACHA · YOUR FIELD COMPANION'}</span>
+      {guided ? <><div className="pacha-story-copy" role="status" aria-live="polite" aria-atomic="true"><h2>{guidance.title}</h2><p>{expanded ? guidance.extra : guidance.text}</p></div><div className="pacha-story-actions"><button className="text-button" onClick={() => setExpanded(!expanded)}><Sparkles size={15} />{expanded ? 'Back to the small step' : 'Explain a little more'}</button><button id="pacha-chat-trigger" className="pacha-ask-button" onClick={onAsk} aria-label="Ask Pacha"><MessageCircle size={17} /><span>Ask Pacha</span></button></div></> : <><p className="pacha-quiet-copy">I am here whenever you need a hand.</p><button id="pacha-chat-trigger" className="pacha-ask-button" onClick={onAsk} aria-label="Ask Pacha"><MessageCircle size={17} />Ask Pacha</button></>}
     </div>
   </aside>
 }

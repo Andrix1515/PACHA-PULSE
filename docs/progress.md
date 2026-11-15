@@ -24,6 +24,17 @@
 
 Validation executed: 110 backend tests; production TypeScript/Vite build; 53 existing browser tests plus 6 new integration browser tests passing (7 duplicate device-independent checks skipped on mobile). Real main provider calls at Mantaro returned elevation 3296 m and model-derived pH 6.34. Old implementation/testing entries below belong to their original team sessions and are historical. No push or deployment was performed; original branch refs are preserved.
 
+## Follow-up integration verification - 2026-11-15
+
+- The guided evidence view presents Location, Soil profile, Terrain, Climate and Data sources using existing provider results. Climate provenance includes a directly visible NASA POWER request link; it does not trigger a new request.
+- The field map exposes a terrain summary with a route to detailed terrain evidence. The guided crop explorer presents filterable crop cards, screening context and side-by-side comparison while retaining the existing candidate and planning APIs.
+- Fixed the comparison heading and kept the NASA request link available in Grower mode. The map integration test closes the Field tools drawer before activating the terrain summary, and explicitly selects Soil profile when returning to the evidence scene.
+- The first full E2E run found that the terrain card could cover parcel vertices on mobile. The card is now hidden while drawing, preserving map interactions.
+- Targeted browser verification: `npm run test:e2e -- tests/branch-integration.spec.ts` — **8 passed** across desktop and mobile, including synthetic transport fixtures labelled as test-only. No live NASA response is claimed by this test.
+- `npm run build` — passed TypeScript and Vite production build; Vite retains its advisory for chunks larger than 500 kB.
+- `npm run test:e2e -- tests/agent-map.spec.ts` — **14 passed**. Full `npm run test:e2e` — **63 passed, 7 skipped** (duplicate mobile-only geometry cases). The runner also logged repeated React `Maximum update depth exceeded` warnings; they did not fail tests and should be investigated separately.
+- No commit, merge, push or deployment was performed.
+
 ---
 
 # Progress - 2026-11-15: map depth and live companion

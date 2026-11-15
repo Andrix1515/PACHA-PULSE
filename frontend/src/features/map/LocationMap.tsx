@@ -5,7 +5,7 @@ import type { Map as LeafletMap } from 'leaflet'
 import { CircleMarker, MapContainer, Marker, Polygon, Polyline, ScaleControl, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import PlaceSearch from './PlaceSearch'
 import CoordinateForm from '../parcel/CoordinateForm'
-import type { Location, UserRole } from '../../types'
+import type { Location, TerrainInfo, UserRole } from '../../types'
 import { containsPoint, createBoundary, importBoundary, MAX_MAP_LAT, MAX_VERTICES, parseCoordinate, representativePoint, validateVertex, verticesOf } from '../parcel/geometry'
 import type { ParcelBoundary, Vertex } from '../parcel/geometry'
 
@@ -56,6 +56,7 @@ interface Props {
   onExplore?: () => void
   onCrops?: () => void
   onEvidence?: () => void
+  terrain?: TerrainInfo | null
 }
 
 function MapInteraction({ location, boundary, drawing, vertices, onClose, onAdd, onSelect, onView }: Props & { drawing: boolean; vertices: Vertex[]; onClose: () => void; onAdd: (vertex: Vertex) => void; onView: (center: Vertex, zoom: number) => void }) {
@@ -106,7 +107,7 @@ function VertexRow({ vertex, index, count, onUpdate, onRemove, onMove }: { verte
 }
 
 export default function LocationMap(props: Props) {
-  const { location, onSelect, boundary, onSaveBoundary, storageMessage, role, immersive = false, onState, onExplore, onCrops, onEvidence } = props
+  const { location, onSelect, boundary, onSaveBoundary, storageMessage, role, immersive = false, onState, onExplore, onCrops, onEvidence, terrain } = props
   const mapRef = useRef<LeafletMap | null>(null)
   const [activeLayer, setActiveLayer] = useState<LayerId>('street')
   const currentTile = TILE_LAYERS.find((layer) => layer.id === activeLayer)!
@@ -173,6 +174,13 @@ export default function LocationMap(props: Props) {
   }
   return <div className={`parcel-map-editor ${immersive ? 'immersive-map' : ''}`}>
     {immersive && <PlaceSearch onChoose={(place) => { if (place.bounds) mapRef.current?.fitBounds(place.bounds, { padding: [70, 70], maxZoom: 13, animate: !matchMedia('(prefers-reduced-motion: reduce)').matches }); else mapRef.current?.setView([Math.max(-MAX_MAP_LAT, Math.min(MAX_MAP_LAT, place.lat)), place.lon], place.kind === 'country' ? 5 : 9, { animate: false }); setAnnouncement(`Browsing ${place.label}. Select your actual field to change the query point.`) }} />}
+    {immersive && !drawing && location && onEvidence && <aside className="field-terrain-glance" aria-label="Terrain at selected point">
+      <div><span>Elevation</span><strong>{terrain?.elevation_m == null ? 'Not checked' : `${terrain.elevation_m.toFixed(0)} m`}</strong></div>
+      <div><span>Sampled slope</span><strong>{terrain?.slope_percent == null ? 'Not checked' : `${terrain.slope_percent.toFixed(1)}%`}</strong></div>
+      {terrain && <small>{terrain.provenance.spatial_resolution} · estimate, not a field survey</small>}
+      {!terrain && <small>Read DEM estimates for this point and outline.</small>}
+      <button type="button" onClick={onEvidence}>{terrain ? 'See terrain details' : 'Check terrain'} </button>
+    </aside>}
     {immersive && <div className="field-quick-tools" role="group" aria-label="Field actions"><button type="button" onClick={findLocation} disabled={locating}>{locating ? 'Finding your location...' : 'Find my location'}</button><button type="button" aria-pressed={drawing} onClick={() => { setDrawing(!drawing); setAnnouncement(drawing ? 'Drawing paused. Your draft is preserved.' : 'Tap each corner, then tap point 1 to close your field.') }}>{drawing ? 'Pause drawing' : 'Draw my field'}</button>{drawing && <button type="button" disabled={!vertices.length} onClick={() => setVertices((current) => current.slice(0, -1))}>Undo point</button>}{!drawing && onExplore && <button type="button" disabled={!boundary} title={boundary ? 'Explore your saved outline' : 'Save an outline to explore it in 3D'} onClick={onExplore}>Explore in 3D</button>}{!drawing && onCrops && <button type="button" onClick={onCrops}>Crop guide</button>}</div>}
     <div hidden={immersive}>
     <div className="map-toolbar" role="group" aria-label="Map tools"><button type="button" aria-pressed={!drawing} onClick={() => { setDrawing(false); setAnnouncement('Query point mode. Your draft is preserved.') }}>Choose query point</button><button id="parcel-draw-toggle" type="button" aria-pressed={drawing} onClick={() => { setDrawing(true); setAnnouncement('Drawing mode. Add points with clicks, taps, coordinates or the map center.') }}>Draw or edit field</button><button type="button" onClick={() => { setVertices([]); setName(''); setDrawing(true); setError(''); setAnnouncement('New draft. The saved field stays unchanged until you confirm its replacement.') }}>New outline</button><button type="button" onClick={() => setExpanded(!expanded)} aria-pressed={expanded}>{expanded ? 'Reduce map' : 'Expand map'}</button></div>

@@ -1,31 +1,116 @@
 import { ArrowRight, Database, LoaderCircle, Mountain, Sprout } from 'lucide-react'
-import type { Location, Provenance, SoilProperty, UserRole } from '../../types'
+import type { ClimateResponse, Location, Provenance, SoilProperty, UserRole } from '../../types'
 import type { EvidenceTab } from './useFieldEvidence'
 import type { useFieldEvidence } from './useFieldEvidence'
 
 function SourceNote({ source, open }: { source: Provenance; open?: boolean }) {
   return <div className="evidence-source"><p><strong>{source.source}</strong><br />{source.spatial_resolution} · {source.data_quality} · {source.status}<br />Retrieved {source.retrieved_at}</p><details open={open}><summary>Source limitations</summary><ul>{source.limitations.map((text, index) => <li key={index}>{text}</li>)}</ul></details></div>
 }
-function metric(value: number | null | undefined, unit: string) { return value == null ? 'Unavailable' : `${value.toLocaleString('en', { maximumFractionDigits: 2 })}${unit ? ` ${unit}` : ''}` }
-export default function FieldEvidenceScene({ location, role = 'grower', tab, onTab, evidence, onField, onCrops }: { location: Location | null; role?: UserRole; tab: EvidenceTab; onTab: (tab: EvidenceTab) => void; evidence: ReturnType<typeof useFieldEvidence>; onField: () => void; onCrops: () => void }) {
+
+function metric(value: number | null | undefined, unit: string) {
+  return value == null ? 'Unavailable' : `${value.toLocaleString('en', { maximumFractionDigits: 2 })}${unit ? ` ${unit}` : ''}`
+}
+
+function ClimateEvidence({ climate, location, role, onClimate }: { climate: ClimateResponse | null; location: Location | null; role: UserRole; onClimate: () => void }) {
+  const tech = role === 'agronomist'
+  if (!climate) {
+    return <div className="evidence-result">
+      <h2>No historical series loaded</h2>
+      <p>NASA POWER data is not loaded for this point yet. Choose a period in the climate workspace; no values are inferred from the map or rotation scenario.</p>
+      <button className="primary-button" onClick={onClimate}>Choose dates and load NASA climate<ArrowRight size={17} /></button>
+    </div>
+  }
+  return <div className="evidence-result">
+    <h2>NASA POWER · historical grid observations</h2>
+    <p>{climate.start} to {climate.end} · {climate.quality} coverage · {climate.data.length} daily records</p>
+    <div className="evidence-key-metrics">
+      <div><span>Rainfall total</span><strong>{metric(climate.summary.rainfall_total.value, climate.summary.rainfall_total.unit)}</strong></div>
+      <div><span>Mean temperature</span><strong>{metric(climate.summary.temperature_mean.value, climate.summary.temperature_mean.unit)}</strong></div>
+    </div>
+    <p>These are historical values for a gridded point{location ? ` at ${location.lat.toFixed(5)}°, ${location.lon.toFixed(5)}°` : ''}, not a field sensor or forecast. Missing observations remain unavailable.</p>
+    <a href={climate.request_url} target="_blank" rel="noreferrer">View the original NASA POWER request ↗</a>
+    <details open={tech || undefined}>
+      <summary>Period, retrieval and data quality</summary>
+      <dl>
+        <div><dt>Product</dt><dd>{climate.source} · {climate.product_version}</dd></div>
+        <div><dt>Retrieved</dt><dd>{climate.retrieved_at}</dd></div>
+        <div><dt>Quality</dt><dd>{climate.quality} · {climate.status} · {climate.delivery.replaceAll('_', ' ')}</dd></div>
+        <div><dt>Spatial resolution</dt><dd>{climate.spatial_resolution}</dd></div>
+        <div><dt>Coordinates</dt><dd>{climate.lat.toFixed(5)}°, {climate.lon.toFixed(5)}°</dd></div>
+      </dl>
+      <ul>{climate.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>
+    </details>
+    <button className="secondary-button" onClick={onClimate}>Open full climate workspace<ArrowRight size={17} /></button>
+  </div>
+}
+
+export default function FieldEvidenceScene({
+  location,
+  role = 'grower',
+  tab,
+  onTab,
+  evidence,
+  climate,
+  onField,
+  onCrops,
+  onClimate,
+}: {
+  location: Location | null
+  role?: UserRole
+  tab: EvidenceTab
+  onTab: (tab: EvidenceTab) => void
+  evidence: ReturnType<typeof useFieldEvidence>
+  climate: ClimateResponse | null
+  onField: () => void
+  onCrops: () => void
+  onClimate: () => void
+}) {
   const { data, busy, errors, load } = evidence
   const tech = role === 'agronomist'
-  const titles: Record<EvidenceTab, string> = { location: 'A place, with context.', terrain: 'Get to know the ground.', soil: 'What might be in the soil?', sources: 'Follow the evidence.' }
-  const descriptions: Record<EvidenceTab, string> = { location: 'Identify the region around your selected point.', terrain: 'Read elevation and sampled terrain estimates from the existing DEM service.', soil: 'Explore SoilGrids estimates. They describe a modelled grid, not a laboratory test of your field.', sources: 'Check which services are configured or have returned data. Configuration alone is not a successful observation.' }
-  const payload = data[tab]
-  const soil = data.soil, terrain = data.terrain, info = data.location
-  const soilProperties: [string, SoilProperty | null | undefined][] = soil ? [['pH (H₂O)', soil.ph_h2o], ['Organic carbon', soil.soil_organic_carbon], ['Total nitrogen', soil.total_nitrogen], ['Clay', soil.texture_clay_percent], ['Sand', soil.texture_sand_percent], ['Silt', soil.texture_silt_percent], ['Bulk density', soil.bulk_density]] : []
+  const titles: Record<EvidenceTab, string> = {
+    location: 'A place, with context.',
+    terrain: 'Get to know the ground.',
+    soil: 'What might be in the soil?',
+    climate: 'A record of past weather.',
+    sources: 'Follow the evidence.',
+  }
+  const descriptions: Record<EvidenceTab, string> = {
+    location: 'Identify the region around your selected point.',
+    terrain: 'Read elevation and sampled terrain estimates from the existing DEM service.',
+    soil: 'Explore SoilGrids estimates. They describe a modelled grid, not a laboratory test of your field.',
+    climate: 'Review the source, period and limitations of historical NASA POWER observations.',
+    sources: 'Check which services are configured or have returned data. Configuration alone is not a successful observation.',
+  }
+  const soil = data.soil
+  const terrain = data.terrain
+  const info = data.location
+  const soilProperties: [string, SoilProperty | null | undefined][] = soil
+    ? [['pH (H₂O)', soil.ph_h2o], ['Organic carbon', soil.soil_organic_carbon], ['Total nitrogen', soil.total_nitrogen], ['Clay', soil.texture_clay_percent], ['Sand', soil.texture_sand_percent], ['Silt', soil.texture_silt_percent], ['Bulk density', soil.bulk_density]]
+    : []
+
   return <section className="scene-content field-evidence-scene" aria-labelledby="evidence-scene-heading">
-    <p className="eyebrow">YOUR POINT. SOURCES YOU CAN CHECK.</p><h1 id="evidence-scene-heading" tabIndex={-1}>{titles[tab]}</h1><p className="scene-description">{descriptions[tab]}</p>
-    <div className="lesson-tabs" role="group" aria-label="Field evidence topic">{(['location', 'terrain', 'soil', 'sources'] as const).map((value) => <button key={value} aria-pressed={value === tab} onClick={() => onTab(value)}>{value === 'sources' ? 'Sources' : value[0].toUpperCase() + value.slice(1)}</button>)}</div>
-    {!location ? <button className="primary-button" onClick={onField}>Choose my field first<ArrowRight size={17} /></button> : <>
-      <p className="evidence-query">Query point: {location.lat.toFixed(5)}°, {location.lon.toFixed(5)}°. {tab === 'terrain' ? 'A saved outline is sent as polygon coordinates when available.' : 'A map search country is not used as your field.'}</p>
-      <button className="primary-button" disabled={!!busy[tab]} onClick={() => void load(tab)}>{busy[tab] ? <LoaderCircle className="loading-icon" size={18} /> : tab === 'terrain' ? <Mountain size={18} /> : tab === 'soil' ? <Sprout size={18} /> : <Database size={18} />}{busy[tab] ? 'Reading the source…' : payload ? 'Refresh this source' : tab === 'terrain' ? 'Read terrain data' : tab === 'soil' ? 'Read soil estimates' : tab === 'location' ? 'Identify this location' : 'Check source status'}</button>
-      {busy[tab] && <p className="helper-text" role="status">The provider may take a while. You can keep using the map and other steps.</p>}{errors[tab] && <p className="field-error" role="alert">{errors[tab]}</p>}
-      {tab === 'location' && info && <div className="evidence-result"><h2>{info.region || 'Region not identified'}</h2><p>{info.country_name || 'Country not identified'} · {info.hemisphere}</p><dl><div><dt>Regional climate context</dt><dd>{info.climate_zone}</dd></div><div><dt>Estimated elevation</dt><dd>{metric(info.elevation_m, 'm')}</dd></div></dl><SourceNote source={info.provenance} open={tech || undefined} /></div>}
-      {tab === 'terrain' && terrain && <div className="evidence-result"><h2>Terrain around your field</h2><div className="evidence-key-metrics"><div><span>Estimated elevation</span><strong>{metric(terrain.elevation_m, 'm')}</strong></div><div><span>Estimated slope</span><strong>{metric(terrain.slope_percent, '%')}</strong></div></div><p>DEM samples can smooth terraces and small changes in the ground. This summary does not turn the illustrative 3D field into a measured terrain model.</p><details open={tech || undefined}><summary>Relief, aspect and provider warnings</summary><dl><div><dt>Elevation range</dt><dd>{metric(terrain.elevation_min_m, 'm')} to {metric(terrain.elevation_max_m, 'm')}</dd></div><div><dt>Relief</dt><dd>{metric(terrain.relief_m, 'm')}</dd></div><div><dt>Slope in degrees</dt><dd>{metric(terrain.slope_degrees, '°')}</dd></div><div><dt>Aspect</dt><dd>{terrain.aspect ?? 'Unavailable'}</dd></div></dl><ul>{terrain.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details><SourceNote source={terrain.provenance} open={tech || undefined} /></div>}
-      {tab === 'soil' && soil && <div className="evidence-result"><h2>Soil model estimates</h2><div className="evidence-key-metrics"><div><span>Profile mean pH</span><strong>{metric(soil.ph_h2o?.profile_mean, '')}</strong></div><div><span>Texture class</span><strong className="evidence-text-metric">{soil.soil_texture_class === 'unknown' ? 'Unavailable' : soil.soil_texture_class.replaceAll('_', ' ')}</strong></div></div><p>These estimates do not change the soil type you entered. Check important decisions with a local soil test.</p><details open={tech || undefined}><summary>Properties, depth layers and provider warnings</summary><div className="table-scroll" tabIndex={0} role="region" aria-label="Soil estimates by depth"><table><caption>SoilGrids model output. Missing is unavailable, never zero.</caption><thead><tr><th scope="col">Property</th><th scope="col">Profile mean</th><th scope="col">Depth layers</th></tr></thead><tbody>{soilProperties.map(([name, property]) => <tr key={name}><th scope="row">{name}</th><td>{metric(property?.profile_mean, property?.unit || '')}</td><td>{property?.layers.map((layer) => `${layer.depth_range}: ${metric(layer.mean_value, layer.unit)}`).join('; ') || 'Unavailable'}</td></tr>)}</tbody></table></div><ul>{soil.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details><SourceNote source={soil.provenance} open={tech || undefined} /></div>}
-      {tab === 'sources' && data.sources && <div className="evidence-result"><h2>Services for this location</h2><p>{data.sources.country_name || 'Country not specified'}. Each service keeps its own status and coverage.</p><ul className="provider-list">{data.sources.providers.map((provider) => <li key={provider.id}><strong>{provider.name}</strong><span>{provider.status.replaceAll('_', ' ')} · {provider.is_active_for_location ? 'within configured coverage' : 'not active here'}</span><small>{provider.spatial_resolution}</small><a href={provider.documentation_url} target="_blank" rel="noreferrer">Source documentation ↗</a>{provider.last_error && <p>{provider.last_error}</p>}</li>)}</ul></div>}
+    <p className="eyebrow">YOUR POINT. SOURCES YOU CAN CHECK.</p>
+    <h1 id="evidence-scene-heading" tabIndex={-1}>{titles[tab]}</h1>
+    <p className="scene-description">{descriptions[tab]}</p>
+    <div className="lesson-tabs" role="group" aria-label="Field evidence topic">
+      {(['location', 'soil', 'terrain', 'climate', 'sources'] as const).map((value) => <button key={value} aria-pressed={value === tab} onClick={() => onTab(value)}>
+        {value === 'soil' ? 'Soil profile' : value === 'sources' ? 'Data sources' : value[0].toUpperCase() + value.slice(1)}
+      </button>)}
+    </div>
+    {!location && tab !== 'climate' ? <button className="primary-button" onClick={onField}>Choose my field first<ArrowRight size={17} /></button> : <>
+      {tab !== 'climate' && <p className="evidence-query">Query point: {location!.lat.toFixed(5)}°, {location!.lon.toFixed(5)}°. {tab === 'terrain' ? 'A saved outline is sent as polygon coordinates when available.' : 'A map search country is not used as your field.'}</p>}
+      {tab === 'climate' ? <ClimateEvidence climate={climate} location={location} role={role} onClimate={onClimate} /> : <>
+        <button className="primary-button" disabled={!!busy[tab]} onClick={() => void load(tab)}>
+          {busy[tab] ? <LoaderCircle className="loading-icon" size={18} /> : tab === 'terrain' ? <Mountain size={18} /> : tab === 'soil' ? <Sprout size={18} /> : <Database size={18} />}
+          {busy[tab] ? 'Reading the source…' : data[tab] ? 'Refresh this source' : tab === 'terrain' ? 'Read terrain data' : tab === 'soil' ? 'Read soil estimates' : tab === 'location' ? 'Identify this location' : 'Check source status'}
+        </button>
+        {busy[tab] && <p className="helper-text" role="status">The provider may take a while. You can keep using the map and other steps.</p>}
+        {errors[tab] && <p className="field-error" role="alert">{errors[tab]}</p>}
+        {tab === 'location' && info && <div className="evidence-result"><h2>{info.region || 'Region not identified'}</h2><p>{info.country_name || 'Country not identified'} · {info.hemisphere}</p><dl><div><dt>Regional climate context</dt><dd>{info.climate_zone}</dd></div><div><dt>Estimated elevation</dt><dd>{metric(info.elevation_m, 'm')}</dd></div><div><dt>Coordinates</dt><dd>{info.lat.toFixed(5)}°, {info.lon.toFixed(5)}°</dd></div></dl><SourceNote source={info.provenance} open={tech || undefined} /></div>}
+        {tab === 'terrain' && terrain && <div className="evidence-result"><h2>Terrain around your field</h2><div className="evidence-key-metrics"><div><span>Estimated elevation</span><strong>{metric(terrain.elevation_m, 'm')}</strong></div><div><span>Estimated slope</span><strong>{metric(terrain.slope_percent, '%')}</strong></div></div><p>DEM samples can smooth terraces and small changes in the ground. This summary does not turn the illustrative 3D field into a measured terrain model.</p><details open={tech || undefined}><summary>Relief, aspect and provider warnings</summary><dl><div><dt>Elevation range</dt><dd>{metric(terrain.elevation_min_m, 'm')} to {metric(terrain.elevation_max_m, 'm')}</dd></div><div><dt>Relief</dt><dd>{metric(terrain.relief_m, 'm')}</dd></div><div><dt>Slope in degrees</dt><dd>{metric(terrain.slope_degrees, '°')}</dd></div><div><dt>Aspect</dt><dd>{terrain.aspect ?? 'Unavailable'}</dd></div></dl><ul>{terrain.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details><SourceNote source={terrain.provenance} open={tech || undefined} /></div>}
+        {tab === 'soil' && soil && <div className="evidence-result"><h2>Soil model estimates</h2><div className="evidence-key-metrics"><div><span>Profile mean pH</span><strong>{metric(soil.ph_h2o?.profile_mean, '')}</strong></div><div><span>Texture class</span><strong className="evidence-text-metric">{soil.soil_texture_class === 'unknown' ? 'Unavailable' : soil.soil_texture_class.replaceAll('_', ' ')}</strong></div></div><p>These estimates do not change the soil type you entered. Check important decisions with a local soil test.</p><details open={tech || undefined}><summary>Properties, depth layers and provider warnings</summary><div className="table-scroll" tabIndex={0} role="region" aria-label="Soil estimates by depth"><table><caption>SoilGrids model output. Missing is unavailable, never zero.</caption><thead><tr><th scope="col">Property</th><th scope="col">Profile mean</th><th scope="col">Depth layers</th></tr></thead><tbody>{soilProperties.map(([name, property]) => <tr key={name}><th scope="row">{name}</th><td>{metric(property?.profile_mean, property?.unit || '')}</td><td>{property?.layers.map((layer) => `${layer.depth_range}: ${metric(layer.mean_value, layer.unit)}`).join('; ') || 'Unavailable'}</td></tr>)}</tbody></table></div><ul>{soil.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details><SourceNote source={soil.provenance} open={tech || undefined} /></div>}
+        {tab === 'sources' && data.sources && <div className="evidence-result"><h2>Services for this location</h2><p>{data.sources.country_name || 'Country not specified'}. Each service keeps its own status and coverage.</p><ul className="provider-list">{data.sources.providers.map((provider) => <li key={provider.id}><strong>{provider.name}</strong><span>{provider.status.replaceAll('_', ' ')} · {provider.is_active_for_location ? 'within configured coverage' : 'not active here'}</span><small>{provider.spatial_resolution}</small><a href={provider.documentation_url} target="_blank" rel="noreferrer">Source documentation ↗</a>{provider.last_error && <p>{provider.last_error}</p>}</li>)}</ul></div>}
+      </>}
       <div className="findings-next-actions"><button className="text-button" onClick={onCrops}>Explore crop options with the service<ArrowRight size={17} /></button></div>
     </>}
   </section>

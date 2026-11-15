@@ -1,6 +1,13 @@
 # Development and design handoff — 2026-11-15
 
-This local delivery is on **TetoFan** in **Farm_Project**. No commit, merge, push or deployment was performed. Main and the other team's Project_Farm folder were not modified.
+This workspace's current visual/functional integration is on **integracion-visuales** in `PACHA-PULSE`. No commit, merge, push or deployment was performed; `main` and the other project folder were not modified.
+
+## Current integration addition - 2026-11-15
+
+- The evidence scene combines Location, Soil profile, Terrain, Climate and Data sources while reading the existing shared provider state. Historical climate provenance and the original NASA POWER request are visible; switching tabs does not make an external request.
+- The field map shows an elevation/slope summary and links to the detailed terrain panel. The crop explorer shows a filterable catalogue, candidate screening details and side-by-side comparison, and preserves the existing option to try a crop in Alternative A.
+- The terrain summary is hidden while a parcel outline is being drawn so it cannot block map vertices on mobile.
+- Validation: targeted `branch-integration.spec.ts` **8/8**, map/chart regression tests **14/14**, production build passed, and full browser suite **63 passed, 7 skipped**. Fixtures are synthetic and labelled; these results do not establish live provider availability. Vite still warns about >500 kB chunks, and the E2E runner logs repeated React `Maximum update depth exceeded` warnings for separate follow-up investigation.
 
 ## Guided journey
 

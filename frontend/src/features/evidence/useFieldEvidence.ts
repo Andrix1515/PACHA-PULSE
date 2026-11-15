@@ -4,14 +4,15 @@ import { getLocationInfo, getLocationProviders, getSoilProfile, getTerrain } fro
 import type { ParcelBoundary } from '../parcel/geometry'
 import { verticesOf } from '../parcel/geometry'
 
-export type EvidenceTab = 'location' | 'terrain' | 'soil' | 'sources'
+export type EvidenceTab = 'location' | 'terrain' | 'soil' | 'climate' | 'sources'
+type ProviderEvidenceTab = Exclude<EvidenceTab, 'climate'>
 interface Evidence { location: LocationInfo | null; terrain: TerrainInfo | null; soil: SoilProfile | null; sources: LocationProvidersReport | null }
 const empty: Evidence = { location: null, terrain: null, soil: null, sources: null }
 export function useFieldEvidence(location: Location | null, boundary: ParcelBoundary | null) {
   const [data, setData] = useState<Evidence>(empty)
-  const [busy, setBusy] = useState<Partial<Record<EvidenceTab, boolean>>>({})
-  const [errors, setErrors] = useState<Partial<Record<EvidenceTab, string>>>({})
-  const requests = useRef<Partial<Record<EvidenceTab, AbortController>>>({})
+  const [busy, setBusy] = useState<Partial<Record<ProviderEvidenceTab, boolean>>>({})
+  const [errors, setErrors] = useState<Partial<Record<ProviderEvidenceTab, string>>>({})
+  const requests = useRef<Partial<Record<ProviderEvidenceTab, AbortController>>>({})
   const key = location ? `${location.lat}/${location.lon}/${JSON.stringify(boundary?.geometry ?? null)}` : 'none'
   // The key tags every result. Old responses are never displayed for a new point/polygon.
   const currentKey = useRef(key); currentKey.current = key
@@ -21,7 +22,7 @@ export function useFieldEvidence(location: Location | null, boundary: ParcelBoun
     setData(empty); setBusy({}); setErrors({}); setResultKey(key)
     return () => Object.values(requests.current).forEach((request) => request.abort())
   }, [key])
-  const load = useCallback(async (tab: EvidenceTab) => {
+  const load = useCallback(async (tab: ProviderEvidenceTab) => {
     if (!location) return
     requests.current[tab]?.abort()
     const controller = new AbortController(); requests.current[tab] = controller
